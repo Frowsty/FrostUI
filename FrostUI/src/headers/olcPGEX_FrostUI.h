@@ -56,7 +56,7 @@
 
 struct Color_Scheme
 {
-    olc::Pixel button_normal = { 200, 200, 200 };
+    olc::Pixel button_normal = olc::GREY;
     olc::Pixel button_hover = { 150, 150, 150 };
     olc::Pixel button_click = { 100, 100, 100 };
 };
@@ -82,8 +82,11 @@ private:
     olc::vi2d size;
     std::string title;
 
-    std::string identifier;
+    bool should_render = true;
 
+    std::string identifier;
+    //std::string id, FUI_Window* parent, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback
+    
     int border_thickness = 5;
 
 public:
@@ -95,6 +98,8 @@ public:
 
     olc::vi2d get_position() { return position; }
 
+    olc::vi2d get_size() { return size; }
+
     std::string get_identifier() { return identifier; }
 
     int get_border_thickness() { return border_thickness; }
@@ -104,6 +109,10 @@ public:
     void set_border_color(olc::Pixel color) { border_color = color; }
 
     void set_border_thickness(int thickness) { border_thickness = thickness; }
+
+    void close_window(bool close) { should_render = !close; }
+
+    bool get_closed_state() { return should_render; }
 
     void change_position(olc::vi2d pos) { position = pos; }
 
@@ -138,7 +147,7 @@ void FUI_Window::draw()
 
 void FUI_Window::input()
 {
-    if (pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x &&
+    if (pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x - 20 &&
         pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + border_thickness &&
         pge->GetMouse(0).bHeld)
     {
@@ -204,7 +213,6 @@ public:
     void draw(olc::PixelGameEngine* pge) override;
 
     void input(olc::PixelGameEngine* pge) override;
-
 };
 
 FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
@@ -292,11 +300,29 @@ public:
 
     void run();
 
+    void add_button(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+
     void add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
     std::shared_ptr<FUI_Element> find_element(std::string identifier);
 
+    void remove_element(std::string identifier);
+
 };
+
+void olcPGEX_FrostUI::remove_element(std::string id)
+{
+    int i = 0;
+    for (auto& element : elements)
+    {
+        if (element.second->identifier == id)
+        {
+            elements.erase(elements.begin() + i);
+            break;
+        }
+        i++;
+    }
+}
 
 std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(std::string id)
 {
@@ -306,6 +332,20 @@ std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(std::string id)
             return element.second;
     }
     return nullptr;
+}
+
+void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+{
+    if (windows.size() > 0)
+    {
+        for (auto& window : windows)
+        {
+            if (window->get_identifier() == parent_id)
+                elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+            else
+                std::cout << "Coulnd't find window ID\n";
+        }
+    }
 }
 
 void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
@@ -331,16 +371,23 @@ void olcPGEX_FrostUI::draw()
     {
         for (auto& window : windows)
         {
+            if (!window->get_closed_state())
+                continue;
             window->draw();
             window->input();
-        }
-    }
 
-    // first = FUI_Type, second = FUI_Element
-    for (auto& e : elements)
-    {
-        e.second->draw(pge);
-        e.second->input(pge);
+            // first = FUI_Type, second = FUI_Element
+            for (auto& e : elements)
+            {
+                if (e.second->parent->get_identifier() == window->get_identifier())
+                {
+                    e.second->draw(pge);
+                    e.second->input(pge);
+                }
+                else
+                    continue;
+            }
+        }
     }
 }
 
