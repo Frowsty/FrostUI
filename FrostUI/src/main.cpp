@@ -11,7 +11,8 @@ public:
     }
 
     olcPGEX_FrostUI frost_ui;
-    FUI_Window main_window{ this, "main_window", { 50, 25 }, { 400, 250 }, "New Window"};
+    FUI_Window main_window{ this, "main_window", { 10, 25 }, { 490, 250 }, "New Window"};
+    FUI_Window new_window{ this, "new_window", { 520, 25 }, { 490, 250 }, "New Window" };
 
     int i = 0;
     int j = 0;
@@ -22,29 +23,45 @@ public:
         // Setting some colors
         main_window.set_background_color(olc::WHITE);
         main_window.set_border_color(olc::GREY);
-        main_window.set_border_thickness(20);
+        main_window.set_top_border_thickness(20);
+        main_window.set_border_thickness(5);
+
+        // Setting some colors
+        new_window.set_background_color(olc::WHITE);
+        new_window.set_border_color(olc::GREY);
+        new_window.set_top_border_thickness(20);
+        new_window.set_border_thickness(5);
 
         frost_ui.add_window(&main_window); // Add window to UI Handler
+        frost_ui.add_window(&new_window); // Add window to UI Handler
+        // Create groups for respective tabs
         frost_ui.add_group("tab_1");
         frost_ui.add_group("tab_2");
         frost_ui.add_group("tab_3");
 
-        // Create close button for main window, using the parent ID parameter we can manually set the parent without having to globalize the parent to all new elements
-        frost_ui.add_button("main_window", "exit_button", "X", { main_window.get_size().x - 20 - (main_window.get_border_thickness() / 3), -20 }, { 20, 20 }, [&] 
+        // Create a close button with a manual parent ID 
+        // you can manually pass parent ID instead of using set_active_window which will default all element to the active window
+        // The following button will not have a group attached which means it will be rendered despite a specific group being the render target
+        // We don't want to have a group assigned to the close button since we want to render it at all times
+        /*frost_ui.add_button("main_window", "exit_button", "X", { main_window.get_size().x - 20 - (main_window.get_border_thickness() / 3), -20 }, { 20, 20 }, [&] 
             {
                 main_window.close_window(true);
             });
         frost_ui.find_element("exit_button")->set_text_color(olc::BLACK);
-
-        frost_ui.set_active_window(main_window.get_id()); // Set the active window (window that will be used to add elements)
+        */
+        // Set the active window (window that will be used to add elements)
+        frost_ui.set_active_window(main_window.get_id());
 
         // Tabs example
-        frost_ui.add_button("tab1", "Tab 1", { 0, 0 }, { 130, 20 }, [&] { frost_ui.set_active_group("tab_1"); });
-        frost_ui.add_button("tab2", "Tab 2", { 130, 0 }, { 130, 20 }, [&] { frost_ui.set_active_group("tab_2"); });
-        frost_ui.add_button("tab3", "Tab 3", { 260, 0 }, { 130, 20 }, [&] { frost_ui.set_active_group("tab_3"); });
+        int tab_size = main_window.get_window_space().x / 3;
+        std::cout << tab_size * 3;
+        frost_ui.add_button("tab1", "Tab 1", { 0, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_1"); });
+        frost_ui.add_button("tab2", "Tab 2", { tab_size, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_2"); });
+        frost_ui.add_button("tab3", "Tab 3", { tab_size * 2, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_3"); });
 
+        // Set the active group to tab_1 (every element that is added to the UI instance will now be a part of this group)
         frost_ui.set_active_group("tab_1");
-        // Nesting buttons
+        // Nesting buttons in the tab_1 group
         frost_ui.add_button("id1", "Test Button", { 5, 25 }, { 100, 20 }, [&]
             {
                 i++;
@@ -67,7 +84,9 @@ public:
                 }
             });
 
+        // Change the active group to tab_2 (every element will be automatically added to this group)
         frost_ui.set_active_group("tab_2");
+        // Nesting buttons in the tab_2 group
         frost_ui.add_button("id3", "Test Button 2", { 5, 25 }, { 100, 20 }, [&]
             {
                 j++;
@@ -85,6 +104,7 @@ public:
                         });
             });
 
+        // set the active group to tab_1 (this will act as the default group to be rendered)
         frost_ui.set_active_group("tab_1");
 
         return true;
@@ -97,6 +117,8 @@ public:
             return false;
         if (GetKey(olc::SHIFT).bPressed)
             main_window.close_window(false);
+        if (GetKey(olc::ENTER).bPressed)
+            new_window.close_window(false);
 
         frost_ui.run();
 

@@ -81,13 +81,24 @@ private:
     olc::vi2d size;
     std::string title;
 
+    enum class button_state
+    {
+        NORMAL = 0,
+        HOVER,
+        CLICK
+    };
+
+    button_state state = button_state::NORMAL;
+
     bool is_dragging = false;
+
+    bool focused = false;
 
     bool should_render = true;
 
     std::string identifier;
-    //std::string id, FUI_Window* parent, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback
     
+    int top_border_thickness = 20;
     int border_thickness = 5;
 
 public:
@@ -101,13 +112,19 @@ public:
 
     olc::vi2d get_size() { return size; }
 
+    olc::vi2d get_window_space() { return olc::vi2d(size.x - border_thickness * 2, size.y - top_border_thickness); }
+
     std::string get_id() { return identifier; }
+
+    int get_top_border_thickness() { return top_border_thickness; }
 
     int get_border_thickness() { return border_thickness; }
 
     void set_background_color(olc::Pixel color) { background_color = color; };
 
     void set_border_color(olc::Pixel color) { border_color = color; }
+
+    void set_top_border_thickness(int thickness) { top_border_thickness = thickness; }
 
     void set_border_thickness(int thickness) { border_thickness = thickness; }
 
@@ -118,6 +135,10 @@ public:
     void change_position(olc::vi2d pos) { position = pos; }
 
     void change_size(olc::vi2d s) { size = s; }
+
+    void set_focused(bool state) { focused = state; }
+
+    bool is_focused() { return focused; }
 };
 
 FUI_Window::FUI_Window(olc::PixelGameEngine* p, std::string id, olc::vi2d pos, olc::vi2d s, std::string txt)
@@ -135,21 +156,59 @@ void FUI_Window::draw()
     pge->FillRectDecal(position, size, background_color);
 
     // Draw the window border
-    int border_size = border_thickness / 3;
-    pge->FillRectDecal(position, olc::vf2d(border_size, size.y), border_color); // Left side
-    pge->FillRectDecal(olc::vf2d(position.x + size.x - border_size, position.y), olc::vf2d(border_size, size.y), border_color); // Right side
-    pge->FillRectDecal(olc::vf2d(position.x, position.y + size.y - border_size), olc::vf2d(size.x, border_size), border_color); // Bottom side
-    pge->FillRectDecal(position, olc::vf2d(size.x, border_thickness), border_color); // Top bar
+    pge->FillRectDecal(position, olc::vf2d(border_thickness, size.y), border_color); // Left side
+    pge->FillRectDecal(olc::vf2d(position.x + size.x - border_thickness, position.y), olc::vf2d(border_thickness, size.y), border_color); // Right side
+    pge->FillRectDecal(olc::vf2d(position.x, position.y + size.y - border_thickness), olc::vf2d(size.x, border_thickness), border_color); // Bottom side
+    pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), border_color); // Top bar
 
     // Draw the window title
-    olc::vf2d title_position = olc::vf2d(position.x + (size.x / 2) - (pge->GetTextSize(title).x / 2), position.y + (border_thickness / 2) - (pge->GetTextSize(title).y / 2));
+    olc::vf2d title_position = olc::vf2d(position.x + (size.x / 2) - (pge->GetTextSize(title).x / 2), position.y + (top_border_thickness / 2) - (pge->GetTextSize(title).y / 2));
     pge->DrawStringDecal(title_position, title, olc::BLACK);
+
+    // Draw the default window close button
+    olc::vi2d temp_pos = { position.x + size.x - (size.x / 10), position.y };
+    olc::vi2d temp_size = { size.x / 10, top_border_thickness };
+    switch (state)
+    {
+    case button_state::NORMAL:
+        pge->FillRectDecal(temp_pos, temp_size, color_scheme.button_normal);
+        break;
+    case button_state::HOVER:
+        pge->FillRectDecal(temp_pos, temp_size, color_scheme.button_hover);
+        break;
+    case button_state::CLICK:
+        pge->FillRectDecal(temp_pos, temp_size, color_scheme.button_click);
+        break;
+    }
+    olc::vf2d close_position = olc::vf2d(temp_pos.x + (temp_size.x / 2) - (pge->GetTextSize("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSize("X").y / 2));
+    pge->DrawStringDecal(close_position, "X", olc::BLACK);
+
+    // Override top border with a darker color when window is inactive 
+    if (!focused)
+        pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), { 100, 100, 100, 150 }); // Top bar
 }
 
 void FUI_Window::input()
 {
-    if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x &&
-        pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + border_thickness) || is_dragging)
+    olc::vi2d new_window_position = position;
+    // input on default close button
+    if ((pge->GetMousePos().x >= position.x + size.x - (size.x / 10) && pge->GetMousePos().x <= position.x + size.x &&
+        pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + top_border_thickness))
+    {
+        if (pge->GetMouse(0).bHeld || pge->GetMouse(0).bPressed || pge->GetMouse(0).bReleased )
+        {
+            if (pge->GetMouse(0).bReleased && focused)
+                close_window(true);
+            state = button_state::CLICK;
+        }
+        else
+            state = button_state::HOVER;
+    }
+    else
+        state = button_state::NORMAL;
+
+    if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x - (size.x / 10) &&
+        pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + top_border_thickness) || is_dragging)
     {
         if (pge->GetMouse(0).bPressed)
         {
@@ -157,12 +216,24 @@ void FUI_Window::input()
             mouse_difference = pge->GetMousePos() - position;
         }
 
-        if (pge->GetMouse(0).bHeld && is_dragging)
-            position = pge->GetMousePos() - mouse_difference;
+        if (pge->GetMouse(0).bHeld && is_dragging && focused)
+            new_window_position = pge->GetMousePos() - mouse_difference;
+
+        // clamp window to not go out of screen
+        if (!(new_window_position.x <= 0 || new_window_position.x + size.x >= pge->GetWindowSize().x))
+            position.x = new_window_position.x;
+        if (!(new_window_position.y <= 0 || new_window_position.y + size.y >= pge->GetWindowSize().y))
+            position.y = new_window_position.y;
     }
     
     if (pge->GetMouse(0).bReleased)
         is_dragging = false;
+
+    if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x &&
+        pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + size.y) && pge->GetMouse(0).bPressed)
+        focused = true;
+    else if (pge->GetMouse(0).bPressed)
+        focused = false;
 }
 
 /*
@@ -189,8 +260,6 @@ public:
     virtual void draw(olc::PixelGameEngine* pge) {}
 
     virtual void input(olc::PixelGameEngine* pge) {}
-
-    virtual void update() {}
 
     void set_size(olc::vi2d s) { size = s; }
 
@@ -230,8 +299,6 @@ public:
     void draw(olc::PixelGameEngine* pge) override;
 
     void input(olc::PixelGameEngine* pge) override;
-
-    void update() override;
 };
 
 FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
@@ -279,7 +346,7 @@ void FUI_Button::draw(olc::PixelGameEngine* pge)
 
     // Adapt positioning depending on if there's a parent to the element or not
     if (parent)
-        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness() / 3, parent->get_border_thickness()));
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
     else
         adaptive_position = olc::vi2d(0,0);
 
@@ -322,15 +389,6 @@ void FUI_Button::input(olc::PixelGameEngine* pge)
         state = Button_State::NONE;
 }
 
-void FUI_Button::update()
-{
-    // Adapt positioning depending on if there's a parent to the element or not
-    if (parent)
-        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness() / 3, parent->get_border_thickness()));
-    else
-        adaptive_position = olc::vi2d(0, 0);
-}
-
 /*
 ####################################################
 ################FUI_HANDLER START###################
@@ -339,14 +397,34 @@ void FUI_Button::update()
 class olcPGEX_FrostUI : public olc::PGEX
 {
 private:
-    std::vector<FUI_Window*> windows;
+    std::deque<FUI_Window*> windows;
     std::vector<std::string> groups;
     std::string active_window_id;
     std::string active_group;
-    std::deque <std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> elements;
+    std::deque<std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> elements;
 
     void draw();
 
+    void push_focused_to_back()
+    {
+        int i = 0;
+        FUI_Window* temp;
+        for (auto& window : windows)
+        {
+            if (i == 0 && window->is_focused() && windows.back()->is_focused())
+            {
+                window->set_focused(false);
+                break;
+            }
+            if (window->is_focused())
+            {
+                temp = window;
+                windows.push_back(temp);
+                windows.erase(windows.begin() + i);
+            }
+            i++;
+        }
+    }
 public:
 
     void set_active_window(std::string window_id) 
@@ -393,6 +471,9 @@ public:
             windows.push_back(w);
         else
             std::cout << "Cannot add duplicates of same window (function affected: add_window, affected window_id: " + w->get_id() + ")\n";
+
+        if (windows.size() == 1)
+            windows.back()->set_focused(true);
     }
 
     void add_group(std::string g) 
@@ -459,9 +540,9 @@ void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, 
         {
             if (window->get_id() == parent_id)
                 if (!active_group.empty())
-                    elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
                 else
-                    elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
+                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
             else
                 std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
         }
@@ -478,28 +559,33 @@ void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::
         {
             if (window->get_id() == active_window_id)
                 if (!active_group.empty())
-                    elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
+                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
                 else
-                    elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
         }
     }
     else
         if (!active_group.empty())
-            elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, active_group, text, position, size, callback)));
+            elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, active_group, text, position, size, callback)));
         else
-            elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, text, position, size, callback)));
+            elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, text, position, size, callback)));
 }
 
 void olcPGEX_FrostUI::draw()
 {
-    // Draw main window first
+    push_focused_to_back();
+    // Draw windows first
     if (windows.size() > 0)
     {
         for (auto& window : windows)
         {
             if (!window->get_closed_state())
+            {
+                if (window->is_focused())
+                    window->set_focused(false);
                 continue;
-
+            }
+            
             window->input();
             window->draw();
             
@@ -518,7 +604,8 @@ void olcPGEX_FrostUI::draw()
                     if (e.second->parent->get_id() == window->get_id())
                     {
                         e.second->draw(pge);
-                        e.second->input(pge);
+                        if (window->is_focused())
+                            e.second->input(pge);
                     }
                     else
                         continue;
@@ -526,7 +613,8 @@ void olcPGEX_FrostUI::draw()
                 else
                 {
                     e.second->draw(pge);
-                    e.second->input(pge);
+                    if (window->is_focused())
+                        e.second->input(pge);
                 }
             }
         }
