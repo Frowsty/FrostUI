@@ -100,7 +100,7 @@ public:
 
     olc::vi2d get_size() { return size; }
 
-    std::string get_identifier() { return identifier; }
+    std::string get_id() { return identifier; }
 
     int get_border_thickness() { return border_thickness; }
 
@@ -170,6 +170,12 @@ void FUI_Window::input()
     }
 }
 
+/*
+####################################################
+################FUI_ELEMENT START###################
+####################################################
+*/
+
 class FUI_Element
 {
 public:
@@ -193,6 +199,11 @@ public:
     void set_text(std::string txt) { text = txt; }
 };
 
+/*
+####################################################
+################FUI_BUTTON START####################
+####################################################
+*/
 class FUI_Button : public FUI_Element
 {
 private:
@@ -282,6 +293,12 @@ void FUI_Button::input(olc::PixelGameEngine* pge)
         state = Button_State::NONE;
 }
 
+
+/*
+####################################################
+################FUI_HANDLER START###################
+####################################################
+*/
 class olcPGEX_FrostUI : public olc::PGEX
 {
 private:
@@ -294,7 +311,21 @@ private:
 
 public:
 
-    void set_active_window(std::string window_id) { active_window_id = window_id; }
+    void set_active_window(std::string window_id) 
+    { 
+        for (auto& window : windows) 
+        { 
+            if (window->get_id() == window_id)
+            {
+                active_window_id = window_id;
+                break;
+            }
+            else
+                active_window_id.clear();
+        }
+        if (active_window_id.empty())
+            std::cout << "Could not find the window ID in added windows\n";
+    }
 
     void add_window(FUI_Window* w) { windows.emplace_back(w); has_set_window = true; }
 
@@ -340,24 +371,24 @@ void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, 
     {
         for (auto& window : windows)
         {
-            if (window->get_identifier() == parent_id)
+            if (window->get_id() == parent_id)
                 elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
             else
                 std::cout << "Coulnd't find window ID\n";
         }
     }
+    else
+        std::cout << "There's no windows to be used as parent\n";
 }
 
 void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
-    if (windows.size() > 0)
+    if (!active_window_id.empty())
     {
         for (auto& window : windows)
         {
-            if (window->get_identifier() == active_window_id)
+            if (window->get_id() == active_window_id)
                 elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
-            else
-                elements.push_back(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, text, position, size, callback)));
         }
     }
     else
@@ -379,14 +410,30 @@ void olcPGEX_FrostUI::draw()
             // first = FUI_Type, second = FUI_Element
             for (auto& e : elements)
             {
-                if (e.second->parent->get_identifier() == window->get_identifier())
+                if (e.second->parent)
+                {
+                    if (e.second->parent->get_id() == window->get_id())
+                    {
+                        e.second->draw(pge);
+                        e.second->input(pge);
+                    }
+                    else
+                        continue;
+                }
+                else
                 {
                     e.second->draw(pge);
                     e.second->input(pge);
                 }
-                else
-                    continue;
             }
+        }
+    }
+    else
+    {
+        for (auto& e : elements)
+        {
+             e.second->draw(pge);
+             e.second->input(pge);
         }
     }
 }

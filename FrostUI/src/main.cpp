@@ -25,11 +25,12 @@ public:
         main_window.set_border_thickness(20);
 
         frost_ui.add_window(&main_window); // Add window to UI Handler
+        // Create a standalone button relative to main_window (Used as exit button in this regard) (add_button allows you to manually set parent or use set_active_window)
         frost_ui.add_button("main_window", "exit_button", "X", { main_window.get_size().x - 20 - (main_window.get_border_thickness() / 3),  -20 }, { 20, 20 }, [&] 
             {
                 main_window.close_window(true);
             });
-        frost_ui.set_active_window(main_window.get_identifier()); // Set the active window (window that will be used to add elements)
+        frost_ui.set_active_window(main_window.get_id()); // Set the active window (window that will be used to add elements)
 
         // Nesting buttons
         frost_ui.add_button("id1", "Test Button", { 5, 5 }, { 100, 20 }, [&]
