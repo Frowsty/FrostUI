@@ -65,7 +65,8 @@ FUI_Colors color_scheme;
 
 enum class FUI_Type
 {
-    BUTTON = 0
+    BUTTON = 0,
+    LABEL
 };
 
 class FUI_Window
@@ -80,6 +81,8 @@ private:
     olc::vi2d mouse_difference;
     olc::vi2d size;
     std::string title;
+
+    FUI_Window* overlapping_window;
 
     enum class button_state
     {
@@ -106,7 +109,7 @@ public:
 
     void draw();
 
-    void input();
+    void input(std::deque<FUI_Window*> windows);
 
     olc::vi2d get_position() { return position; }
 
@@ -188,8 +191,26 @@ void FUI_Window::draw()
         pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), { 100, 100, 100, 150 }); // Top bar
 }
 
-void FUI_Window::input()
+void FUI_Window::input(std::deque<FUI_Window*> windows)
 {
+    for (auto& window : windows)
+    {
+        if (window->get_id() != identifier)
+        {
+            if (window->is_focused())
+            {
+                if (position.x + size.x > window->get_position().x&& position.x < window->get_position().x + window->get_size().x &&
+                    position.y + size.y > window->get_position().y&& position.y < window->get_position().y + window->get_size().y)
+                {
+                    overlapping_window = window;
+                    break;
+                }
+                else
+                    overlapping_window = nullptr;
+            }
+        }
+    }
+
     olc::vi2d new_window_position = position;
     // input on default close button
     if ((pge->GetMousePos().x >= position.x + size.x - (size.x / 10) && pge->GetMousePos().x <= position.x + size.x &&
@@ -222,18 +243,43 @@ void FUI_Window::input()
         // clamp window to not go out of screen
         if (!(new_window_position.x <= 0 || new_window_position.x + size.x >= pge->GetWindowSize().x))
             position.x = new_window_position.x;
+        else
+            mouse_difference = pge->GetMousePos() - position;
         if (!(new_window_position.y <= 0 || new_window_position.y + size.y >= pge->GetWindowSize().y))
             position.y = new_window_position.y;
+        else
+            mouse_difference = pge->GetMousePos() - position;
     }
-    
+
     if (pge->GetMouse(0).bReleased)
         is_dragging = false;
 
-    if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x &&
-        pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + size.y) && pge->GetMouse(0).bPressed)
-        focused = true;
-    else if (pge->GetMouse(0).bPressed)
-        focused = false;
+    if (overlapping_window)
+    {
+        if (!((pge->GetMousePos().x >= overlapping_window->get_position().x && pge->GetMousePos().x <= overlapping_window->get_position().x + overlapping_window->get_size().x &&
+            pge->GetMousePos().y >= overlapping_window->get_position().y && pge->GetMousePos().y <= overlapping_window->get_position().y + overlapping_window->get_size().y) &&
+            pge->GetMouse(0).bPressed))
+        {
+            if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x &&
+                pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + size.y) && pge->GetMouse(0).bPressed)
+            {
+                overlapping_window->set_focused(false);
+                focused = true;
+            }
+            else if (pge->GetMouse(0).bPressed)
+                focused = false;
+        }
+    }
+    else
+    {
+        if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x &&
+            pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + size.y) && pge->GetMouse(0).bPressed)
+        {
+            focused = true;
+        }
+        else if (pge->GetMouse(0).bPressed)
+            focused = false;
+    }
 }
 
 /*
@@ -252,6 +298,9 @@ public:
     olc::vi2d adaptive_position;
     std::string text;
     std::string group;
+    olc::vf2d text_scale = { 1.0f, 1.0f };
+
+    bool centered = false;
     
     olc::Pixel text_color = olc::WHITE;
 
@@ -270,7 +319,74 @@ public:
     void set_text_color(olc::Pixel color) { text_color = color; }
 
     std::string get_group() { return group;  }
+
+    void set_centered(bool center) { centered = center; }
+
+    void scale_text(olc::vf2d scale) { text_scale = scale; }
 };
+
+/*
+####################################################
+################FUI_LABEL START#####################
+####################################################
+*/
+
+class FUI_Label : public FUI_Element
+{
+public:
+    FUI_Label(std::string id, FUI_Window* parent, std::string text, olc::vi2d position);
+    FUI_Label(std::string id, FUI_Window* parent, std::string group, std::string text, olc::vi2d position);
+    FUI_Label(std::string id, std::string group, std::string text, olc::vi2d position);
+    FUI_Label(std::string id, std::string text, olc::vi2d position);
+
+    void draw(olc::PixelGameEngine* pge) override;
+};
+
+FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string t, olc::vi2d p)
+{
+    identifier = id;
+    parent = pt;
+    text = t;
+    position = p;
+}
+FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string g, std::string t, olc::vi2d p)
+{
+    identifier = id;
+    parent = pt;
+    text = t;
+    position = p;
+    group = g;
+}
+FUI_Label::FUI_Label(std::string id, std::string g, std::string t, olc::vi2d p)
+{
+    identifier = id;
+    text = t;
+    position = p;
+    group = g;
+}
+FUI_Label::FUI_Label(std::string id, std::string t, olc::vi2d p)
+{
+    identifier = id;
+    text = t;
+    position = p;
+}
+
+void FUI_Label::draw(olc::PixelGameEngine* pge)
+{
+    // Adapt positioning depending on if there's a parent to the element or not
+    if (parent)
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+    else
+        adaptive_position = olc::vi2d(0, 0);
+
+    olc::vf2d temp = { adaptive_position.x + position.x - ((pge->GetTextSize(text).x / 2) * text_scale.x),
+                       adaptive_position.y + position.y - ((pge->GetTextSize(text).y / 2) * text_scale.y) };
+
+    if (centered)
+        pge->DrawStringDecal(temp, text, text_color, text_scale);
+    else
+        pge->DrawStringDecal(adaptive_position + position, text, text_color, text_scale);
+}
 
 /*
 ####################################################
@@ -366,7 +482,7 @@ void FUI_Button::draw(olc::PixelGameEngine* pge)
     // Draw the text
     olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - (pge->GetTextSize(text).x / 2),
                                         adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
-    pge->DrawStringDecal(text_position, text, text_color);
+    pge->DrawStringDecal(text_position, text, text_color, text_scale);
 }
 
 void FUI_Button::input(olc::PixelGameEngine* pge)
@@ -408,18 +524,11 @@ private:
     void push_focused_to_back()
     {
         int i = 0;
-        FUI_Window* temp;
         for (auto& window : windows)
         {
-            if (i == 0 && window->is_focused() && windows.back()->is_focused())
-            {
-                window->set_focused(false);
-                break;
-            }
             if (window->is_focused())
             {
-                temp = window;
-                windows.push_back(temp);
+                windows.push_back(window);
                 windows.erase(windows.begin() + i);
             }
             i++;
@@ -500,6 +609,10 @@ public:
 
     void add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
+    void add_label(std::string parent_id, std::string identifier, std::string text, olc::vi2d position);
+
+    void add_label(std::string identifier, std::string text, olc::vi2d position);
+
     std::shared_ptr<FUI_Element> find_element(std::string identifier);
 
     void remove_element(std::string identifier);
@@ -532,43 +645,102 @@ std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(std::string id)
     return nullptr;
 }
 
-void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+void olcPGEX_FrostUI::add_label(std::string parent_id, std::string identifier, std::string text, olc::vi2d position)
 {
-    if (windows.size() > 0)
+    if (!find_element(identifier))
     {
-        for (auto& window : windows)
+        if (windows.size() > 0)
         {
-            if (window->get_id() == parent_id)
-                if (!active_group.empty())
-                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, text, position)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, active_group, text, position)));
                 else
-                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
-            else
-                std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
+                    std::cout << "Could not find parent window ID (function affected: add_label, label_id affected: " + identifier + ")\n";
+            }
         }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_label, label_id affected: " + identifier + ")\n";
     }
     else
-        std::cout << "There's no windows to be used as parent (function affected: add_button, button_id affected: " + identifier + ")\n";
+        std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_label(std::string identifier, std::string text, olc::vi2d position)
+{
+    if (!find_element(identifier))
+    {
+        if (!active_window_id.empty())
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, active_group, text, position)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, text, position)));
+            }
+        }
+        else
+            if (!active_group.empty())
+                elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, active_group, text, position)));
+            else
+                elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, text, position)));
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+{
+    if (!find_element(identifier))
+    {
+        if (windows.size() > 0)
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+                    else
+                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
+                else
+                    std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
+            }
+        }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_button, button_id affected: " + identifier + ")\n";
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_button, label_id affected: " + identifier + ")\n";
 }
 
 void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
-    if (!active_window_id.empty())
+    if (!find_element(identifier))
     {
-        for (auto& window : windows)
+        if (!active_window_id.empty())
         {
-            if (window->get_id() == active_window_id)
-                if (!active_group.empty())
-                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
-                else
-                    elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
+                    else
+                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+            }
         }
+        else
+            if (!active_group.empty())
+                elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, active_group, text, position, size, callback)));
+            else
+                elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, text, position, size, callback)));
     }
     else
-        if (!active_group.empty())
-            elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, active_group, text, position, size, callback)));
-        else
-            elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, text, position, size, callback)));
+        std::cout << "Duplicate IDs found (function affected: add_button, label_id affected: " + identifier + ")\n";
 }
 
 void olcPGEX_FrostUI::draw()
@@ -586,7 +758,7 @@ void olcPGEX_FrostUI::draw()
                 continue;
             }
             
-            window->input();
+            window->input(windows);
             window->draw();
             
 
