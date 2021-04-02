@@ -573,22 +573,28 @@ public:
         if (active_group.empty())
             std::cout << "Could not find the group ID in added windows (function affected: set_active_group, affected window_id: " + g + ")\n";
     }
-
-    void add_window(FUI_Window* w)
+    //this, "new_window", { 520, 25 }, { 490, 250 }, "New Window"
+    FUI_Window* create_window(std::string identifier, olc::vi2d position, olc::vi2d size, std::string title)
     {
         bool is_duplicate = false;
+        FUI_Window* temp_window = nullptr;
         for (auto& window : windows)
         {
-            if (window->get_id() == w->get_id())
+            if (window->get_id() == identifier)
                 is_duplicate = true;
         }
         if (!is_duplicate)
-            windows.push_back(w);
+        {
+            windows.push_back(new FUI_Window{ pge, identifier, position, size, title });
+            temp_window = windows.back();
+        }
         else
-            std::cout << "Cannot add duplicates of same window (function affected: add_window, affected window_id: " + w->get_id() + ")\n";
+            std::cout << "Cannot add duplicates of same window (function affected: create_window, affected window_id: " + identifier + ")\n";
 
         if (windows.size() == 1)
             windows.back()->set_focused(true);
+
+        return temp_window;
     }
 
     void add_group(std::string g) 

@@ -13,11 +13,6 @@ public:
     }
 
     olcPGEX_FrostUI frost_ui;
-    FUI_Window main_window{ this, "main_window", { 10, 25 }, { 490, 250 }, "New Window"};
-    FUI_Window new_window{ this, "new_window", { 520, 25 }, { 490, 250 }, "New Window" };
-    FUI_Window new_window2{ this, "new_window2", { 520, 300 }, { 490, 250 }, "New Window" };
-    FUI_Window new_window3{ this, "new_window3", { 10, 300 }, { 490, 250 }, "New Window" };
-    FUI_Window new_window4{ this, "new_window4", { 300, 200 }, { 490, 250 }, "New Window" };
 
     int i = 0;
     int j = 0;
@@ -25,51 +20,53 @@ public:
 public:
     bool OnUserCreate() override
     {
-        // Setting some colors
-        main_window.set_background_color(olc::WHITE);
-        main_window.set_border_color(olc::GREY);
-        main_window.set_top_border_thickness(20);
-        main_window.set_border_thickness(5);
+        // Create all windows
+        auto main_window = frost_ui.create_window("main_window", { 10, 25 }, { 490, 250 }, "New Window");
+        auto new_window1 = frost_ui.create_window("new_window", { 520, 25 }, { 490, 250 }, "New Window");
+        auto new_window2 = frost_ui.create_window("new_window2", { 520, 300 }, { 490, 250 }, "New Window");
+        auto new_window3 = frost_ui.create_window("new_window3", { 10, 300 }, { 490, 250 }, "New Window");
+        auto new_window4 = frost_ui.create_window("new_window4", { 300, 200 }, { 490, 250 }, "New Window");
 
         // Setting some colors
-        new_window.set_background_color(olc::WHITE);
-        new_window.set_border_color(olc::GREY);
-        new_window.set_top_border_thickness(20);
-        new_window.set_border_thickness(5);
+        main_window->set_background_color(olc::WHITE);
+        main_window->set_border_color(olc::GREY);
+        main_window->set_top_border_thickness(20);
+        main_window->set_border_thickness(5);
 
         // Setting some colors
-        new_window2.set_background_color(olc::WHITE);
-        new_window2.set_border_color(olc::GREY);
-        new_window2.set_top_border_thickness(20);
-        new_window2.set_border_thickness(5);
+        new_window1->set_background_color(olc::WHITE);
+        new_window1->set_border_color(olc::GREY);
+        new_window1->set_top_border_thickness(20);
+        new_window1->set_border_thickness(5);
 
         // Setting some colors
-        new_window3.set_background_color(olc::WHITE);
-        new_window3.set_border_color(olc::GREY);
-        new_window3.set_top_border_thickness(20);
-        new_window3.set_border_thickness(5);
+        new_window2->set_background_color(olc::WHITE);
+        new_window2->set_border_color(olc::GREY);
+        new_window2->set_top_border_thickness(20);
+        new_window2->set_border_thickness(5);
 
         // Setting some colors
-        new_window4.set_background_color(olc::WHITE);
-        new_window4.set_border_color(olc::GREY);
-        new_window4.set_top_border_thickness(20);
-        new_window4.set_border_thickness(5);
+        new_window3->set_background_color(olc::WHITE);
+        new_window3->set_border_color(olc::GREY);
+        new_window3->set_top_border_thickness(20);
+        new_window3->set_border_thickness(5);
 
-        frost_ui.add_window(&main_window); // Add window to UI Handler
-        frost_ui.add_window(&new_window); // Add window to UI Handler
-        frost_ui.add_window(&new_window2); // Add window to UI Handler
-        frost_ui.add_window(&new_window3); // Add window to UI Handler
-        frost_ui.add_window(&new_window4); // Add window to UI Handler
+        // Setting some colors
+        new_window4->set_background_color(olc::WHITE);
+        new_window4->set_border_color(olc::GREY);
+        new_window4->set_top_border_thickness(20);
+        new_window4->set_border_thickness(5);
+
         // Create groups for respective tabs
         frost_ui.add_group("tab_1");
         frost_ui.add_group("tab_2");
         frost_ui.add_group("tab_3");
 
         // Set the active window (window that will be used to add elements)
-        frost_ui.set_active_window(main_window.get_id());
+        frost_ui.set_active_window("main_window");
 
         // Tabs example
-        int tab_size = main_window.get_window_space().x / 3;
+        int tab_size = main_window->get_window_space().x / 3;
         frost_ui.add_button("tab1", "Tab 1", { 0, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_1"); });
         frost_ui.add_button("tab2", "Tab 2", { tab_size, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_2"); });
         frost_ui.add_button("tab3", "Tab 3", { tab_size * 2, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_3"); });
@@ -137,9 +134,9 @@ public:
         if (GetKey(olc::ESCAPE).bPressed)
             return false;
         if (GetKey(olc::SHIFT).bPressed)
-            main_window.close_window(false);
+            frost_ui.find_window("main_window")->close_window(false);
         if (GetKey(olc::ENTER).bPressed)
-            new_window.close_window(false);
+            frost_ui.find_window("new_window")->close_window(false);
 
         frost_ui.run();
 
