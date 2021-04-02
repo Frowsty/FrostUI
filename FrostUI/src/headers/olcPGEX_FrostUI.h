@@ -573,7 +573,7 @@ public:
         if (active_group.empty())
             std::cout << "Could not find the group ID in added windows (function affected: set_active_group, affected window_id: " + g + ")\n";
     }
-    //this, "new_window", { 520, 25 }, { 490, 250 }, "New Window"
+    
     FUI_Window* create_window(std::string identifier, olc::vi2d position, olc::vi2d size, std::string title)
     {
         bool is_duplicate = false;
