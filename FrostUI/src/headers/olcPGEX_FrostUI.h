@@ -240,6 +240,7 @@ void FUI_Window::input(std::deque<FUI_Window*> windows)
         if (pge->GetMouse(0).bHeld && is_dragging && focused)
             new_window_position = pge->GetMousePos() - mouse_difference;
 
+
         // clamp window to not go out of screen
         if (!(new_window_position.x <= 0 || new_window_position.x + size.x >= pge->GetWindowSize().x))
             position.x = new_window_position.x;
@@ -526,6 +527,11 @@ private:
         int i = 0;
         for (auto& window : windows)
         {
+            if (!window->get_closed_state())
+            {
+                i++;
+                continue;
+            }
             if (window->is_focused())
             {
                 windows.push_back(window);
@@ -612,6 +618,17 @@ public:
     void add_label(std::string parent_id, std::string identifier, std::string text, olc::vi2d position);
 
     void add_label(std::string identifier, std::string text, olc::vi2d position);
+
+    FUI_Window* find_window(std::string identifier)
+    {
+        for (auto& window : windows)
+        {
+            if (window->get_id() == identifier)
+                return window;
+        }
+        std::cout << "Could not find the window ID in added windows (function affected: find_window, affected window_id: " + identifier + ")\n";
+        return nullptr;
+    }
 
     std::shared_ptr<FUI_Element> find_element(std::string identifier);
 

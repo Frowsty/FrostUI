@@ -1,4 +1,6 @@
 #define OLC_PGE_APPLICATION
+#define OLC_GFX_OPENGL33
+
 #include "headers/olcPixelGameEngine.h"
 #include "headers/olcPGEX_FrostUI.h"
 
@@ -15,7 +17,7 @@ public:
     FUI_Window new_window{ this, "new_window", { 520, 25 }, { 490, 250 }, "New Window" };
     FUI_Window new_window2{ this, "new_window2", { 520, 300 }, { 490, 250 }, "New Window" };
     FUI_Window new_window3{ this, "new_window3", { 10, 300 }, { 490, 250 }, "New Window" };
-    FUI_Window new_window4{ this, "new_window4", { 300, 300 }, { 490, 250 }, "New Window" };
+    FUI_Window new_window4{ this, "new_window4", { 300, 200 }, { 490, 250 }, "New Window" };
 
     int i = 0;
     int j = 0;
@@ -63,22 +65,11 @@ public:
         frost_ui.add_group("tab_2");
         frost_ui.add_group("tab_3");
 
-        // Create a close button with a manual parent ID 
-        // you can manually pass parent ID instead of using set_active_window which will default all element to the active window
-        // The following button will not have a group attached which means it will be rendered despite a specific group being the render target
-        // We don't want to have a group assigned to the close button since we want to render it at all times
-        /*frost_ui.add_button("main_window", "exit_button", "X", { main_window.get_size().x - 20 - (main_window.get_border_thickness() / 3), -20 }, { 20, 20 }, [&] 
-            {
-                main_window.close_window(true);
-            });
-        frost_ui.find_element("exit_button")->set_text_color(olc::BLACK);
-        */
         // Set the active window (window that will be used to add elements)
         frost_ui.set_active_window(main_window.get_id());
 
         // Tabs example
         int tab_size = main_window.get_window_space().x / 3;
-        std::cout << tab_size * 3;
         frost_ui.add_button("tab1", "Tab 1", { 0, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_1"); });
         frost_ui.add_button("tab2", "Tab 2", { tab_size, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_2"); });
         frost_ui.add_button("tab3", "Tab 3", { tab_size * 2, 0 }, { tab_size, 20 }, [&] { frost_ui.set_active_group("tab_3"); });
@@ -87,7 +78,11 @@ public:
         frost_ui.set_active_group("tab_1");
 
         frost_ui.add_label("label_1", "Test label", { 200, 40 });
-        frost_ui.find_element("label_1")->set_text_color(olc::BLACK);
+        auto temp_var = frost_ui.find_element("label_1");
+        if (!frost_ui.find_window("main_window"))
+            temp_var->set_text_color(olc::WHITE);
+        else
+            temp_var->set_text_color(olc::BLACK);
         frost_ui.find_element("label_1")->set_centered(false);
 
         // Nesting buttons in the tab_1 group
@@ -99,8 +94,6 @@ public:
                 temp->set_text("Clicked " + std::to_string(i) + " Times");
                 if (!frost_ui.find_element("id2"))
                 {
-                    auto temp_group = frost_ui.get_active_group();
-                    frost_ui.clear_active_group();
                     frost_ui.add_button("id2", "Reset", { 5, 50 }, { 100, 20 }, [&]
                         {
                             i = 0;
@@ -109,7 +102,6 @@ public:
                             temp->set_text("Test Button");
                             frost_ui.remove_element("id2");
                         });
-                    frost_ui.set_active_group(temp_group);
                 }
             });
 
