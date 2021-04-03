@@ -99,7 +99,7 @@ public:
 
         frost_ui.add_checkbox("id5", "HELLO WORLD", { 5, 75 }, { 15, 15 }, &checkbox_state);
         frost_ui.find_element("id5")->set_text_color(olc::BLACK);
-        frost_ui.find_element("id5")->set_checkbox_orientation("down");
+        frost_ui.find_element("id5")->set_checkbox_orientation("left");
         
         // Change the active group to tab_2 (every element will be automatically added to this group)
         frost_ui.set_active_group("tab_2");

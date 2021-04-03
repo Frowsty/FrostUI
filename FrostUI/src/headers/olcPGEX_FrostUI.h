@@ -56,14 +56,18 @@
 
 struct FUI_Colors
 {
+    // window colors
     olc::Pixel window_border_color = olc::GREY;
     olc::Pixel window_background_color = olc::WHITE;
+    // window exit button colors
     olc::Pixel exit_button_normal = olc::GREY;
     olc::Pixel exit_button_hover = { 150, 150, 150 };
     olc::Pixel exit_button_click = { 100, 100, 100 };
+    // button colors
     olc::Pixel button_normal = olc::GREY;
     olc::Pixel button_hover = { 150, 150, 150 };
     olc::Pixel button_click = { 100, 100, 100 };
+    // checkbox colors
     olc::Pixel checkbox_normal = olc::GREY;
     olc::Pixel checkbox_hover = { 150, 150, 150 };
     olc::Pixel checkbox_active = { 100, 100, 100 };
@@ -983,6 +987,22 @@ void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::
 
 void olcPGEX_FrostUI::run()
 {
+    // Draw standalone elements first (standalone elements are elements without a parent / window)
+    for (auto& e : elements)
+    {
+        if (!e.second)
+            continue;
+        if (!e.second->get_group().empty())
+            if (!active_group.empty())
+                if (e.second->get_group() != active_group || e.second->get_group().empty())
+                    continue;
+        if (!e.second->parent)
+        {
+            e.second->draw(pge);
+            e.second->input(pge);
+        }
+    }
+
     push_focused_to_back();
     // Draw windows first
     if (windows.size() > 0)
@@ -1020,27 +1040,7 @@ void olcPGEX_FrostUI::run()
                     else
                         continue;
                 }
-                else
-                {
-                    e.second->draw(pge);
-                    if (window->is_focused())
-                        e.second->input(pge);
-                }
             }
-        }
-    }
-    else
-    {
-        for (auto& e : elements)
-        {
-            if (!e.second)
-                continue;
-            if (!e.second->get_group().empty())
-                if (!active_group.empty())
-                    if (e.second->get_group() != active_group || e.second->get_group().empty())
-                        continue;
-            e.second->draw(pge);
-            e.second->input(pge);
         }
     }
 }
