@@ -30,33 +30,23 @@ public:
         auto new_window3 = frost_ui.create_window("new_window3", { 10, 300 }, { 490, 250 }, "New Window");
         auto new_window4 = frost_ui.create_window("new_window4", { 300, 200 }, { 490, 250 }, "New Window");
 
-        // Setting some colors
-        main_window->set_background_color(olc::WHITE);
-        main_window->set_border_color(olc::GREY);
+        // Set window appearance
         main_window->set_top_border_thickness(20);
         main_window->set_border_thickness(5);
 
-        // Setting some colors
-        new_window1->set_background_color(olc::WHITE);
-        new_window1->set_border_color(olc::GREY);
+        // Set window appearance
         new_window1->set_top_border_thickness(20);
         new_window1->set_border_thickness(5);
 
-        // Setting some colors
-        new_window2->set_background_color(olc::WHITE);
-        new_window2->set_border_color(olc::GREY);
+        // Set window appearance
         new_window2->set_top_border_thickness(20);
         new_window2->set_border_thickness(5);
 
-        // Setting some colors
-        new_window3->set_background_color(olc::WHITE);
-        new_window3->set_border_color(olc::GREY);
+        // Set window appearance
         new_window3->set_top_border_thickness(20);
         new_window3->set_border_thickness(5);
 
-        // Setting some colors
-        new_window4->set_background_color(olc::WHITE);
-        new_window4->set_border_color(olc::GREY);
+        // Set window appearance
         new_window4->set_top_border_thickness(20);
         new_window4->set_border_thickness(5);
 

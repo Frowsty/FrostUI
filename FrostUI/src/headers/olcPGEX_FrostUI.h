@@ -56,9 +56,17 @@
 
 struct FUI_Colors
 {
+    olc::Pixel window_border_color = olc::GREY;
+    olc::Pixel window_background_color = olc::WHITE;
+    olc::Pixel exit_button_normal = olc::GREY;
+    olc::Pixel exit_button_hover = { 150, 150, 150 };
+    olc::Pixel exit_button_click = { 100, 100, 100 };
     olc::Pixel button_normal = olc::GREY;
     olc::Pixel button_hover = { 150, 150, 150 };
     olc::Pixel button_click = { 100, 100, 100 };
+    olc::Pixel checkbox_normal = olc::GREY;
+    olc::Pixel checkbox_hover = { 150, 150, 150 };
+    olc::Pixel checkbox_active = { 100, 100, 100 };
 };
 
 FUI_Colors color_scheme;
@@ -74,9 +82,6 @@ class FUI_Window
 {
 private:
     olc::PixelGameEngine* pge;
-
-    olc::Pixel border_color = olc::GREY;
-    olc::Pixel background_color = olc::BLACK;
 
     olc::vi2d position;
     olc::vi2d mouse_difference;
@@ -124,10 +129,6 @@ public:
 
     int get_border_thickness() { return border_thickness; }
 
-    void set_background_color(olc::Pixel color) { background_color = color; };
-
-    void set_border_color(olc::Pixel color) { border_color = color; }
-
     void set_top_border_thickness(int thickness) { top_border_thickness = thickness; }
 
     void set_border_thickness(int thickness) { border_thickness = thickness; }
@@ -157,13 +158,13 @@ FUI_Window::FUI_Window(olc::PixelGameEngine* p, std::string id, olc::vi2d pos, o
 void FUI_Window::draw()
 {
     // Draw the main window area
-    pge->FillRectDecal(position, size, background_color);
+    pge->FillRectDecal(position, size, color_scheme.window_background_color);
 
     // Draw the window border
-    pge->FillRectDecal(position, olc::vf2d(border_thickness, size.y), border_color); // Left side
-    pge->FillRectDecal(olc::vf2d(position.x + size.x - border_thickness, position.y), olc::vf2d(border_thickness, size.y), border_color); // Right side
-    pge->FillRectDecal(olc::vf2d(position.x, position.y + size.y - border_thickness), olc::vf2d(size.x, border_thickness), border_color); // Bottom side
-    pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), border_color); // Top bar
+    pge->FillRectDecal(position, olc::vf2d(border_thickness, size.y), color_scheme.window_border_color); // Left side
+    pge->FillRectDecal(olc::vf2d(position.x + size.x - border_thickness, position.y), olc::vf2d(border_thickness, size.y), color_scheme.window_border_color); // Right side
+    pge->FillRectDecal(olc::vf2d(position.x, position.y + size.y - border_thickness), olc::vf2d(size.x, border_thickness), color_scheme.window_border_color); // Bottom side
+    pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), color_scheme.window_border_color); // Top bar
 
     // Draw the window title
     olc::vf2d title_position = olc::vf2d(position.x + (size.x / 2) - (pge->GetTextSize(title).x / 2), position.y + (top_border_thickness / 2) - (pge->GetTextSize(title).y / 2));
@@ -175,13 +176,13 @@ void FUI_Window::draw()
     switch (state)
     {
     case button_state::NORMAL:
-        pge->FillRectDecal(temp_pos, temp_size, color_scheme.button_normal);
+        pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_normal);
         break;
     case button_state::HOVER:
-        pge->FillRectDecal(temp_pos, temp_size, color_scheme.button_hover);
+        pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_hover);
         break;
     case button_state::CLICK:
-        pge->FillRectDecal(temp_pos, temp_size, color_scheme.button_click);
+        pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_click);
         break;
     }
     olc::vf2d close_position = olc::vf2d(temp_pos.x + (temp_size.x / 2) - (pge->GetTextSize("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSize("X").y / 2));
@@ -618,13 +619,13 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
     {
         checkbox_position = olc::vf2d(adaptive_position.x + position.x + pge->GetTextSize(text).x + checkbox_padding, adaptive_position.y + position.y);
         text_position = olc::vf2d(adaptive_position.x + position.x, adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
-        pge->FillRectDecal(checkbox_position, size, color_scheme.button_normal);
+        pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
     }
     else if (checkbox_orientation == "right")
     {
         text_position = olc::vf2d(adaptive_position.x + position.x + size.x + checkbox_padding,
             adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
-        pge->FillRectDecal(checkbox_position, size, color_scheme.button_normal);
+        pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
     }
     pge->DrawStringDecal(text_position, text, text_color, text_scale);
 
@@ -638,12 +639,12 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
     case State::HOVER:
         *checkbox_state = false;
         pge->FillRectDecal(checkbox_position + checkbox_filling, 
-                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2 }, color_scheme.button_hover);
+                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2 }, color_scheme.checkbox_hover);
         break;
     case State::ACTIVE:
         *checkbox_state = true;
         pge->FillRectDecal(checkbox_position + checkbox_filling,
-                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2}, color_scheme.button_click);
+                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2}, color_scheme.checkbox_active);
         break;
     }
 }
