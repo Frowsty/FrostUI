@@ -171,8 +171,8 @@ void FUI_Window::draw()
     pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), color_scheme.window_border_color); // Top bar
 
     // Draw the window title
-    olc::vf2d title_position = olc::vf2d(position.x + (size.x / 2) - (pge->GetTextSize(title).x / 2), position.y + (top_border_thickness / 2) - (pge->GetTextSize(title).y / 2));
-    pge->DrawStringDecal(title_position, title, olc::BLACK);
+    olc::vf2d title_position = olc::vf2d(position.x + (size.x / 2) - (pge->GetTextSizeProp(title).x / 2), position.y + (top_border_thickness / 2) - (pge->GetTextSizeProp(title).y / 2));
+    pge->DrawStringPropDecal(title_position, title, olc::BLACK);
 
     // Draw the default window close button
     olc::vi2d temp_pos = { position.x + size.x - (size.x / 10), position.y };
@@ -189,8 +189,8 @@ void FUI_Window::draw()
         pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_click);
         break;
     }
-    olc::vf2d close_position = olc::vf2d(temp_pos.x + (temp_size.x / 2) - (pge->GetTextSize("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSize("X").y / 2));
-    pge->DrawStringDecal(close_position, "X", olc::BLACK);
+    olc::vf2d close_position = olc::vf2d(temp_pos.x + (temp_size.x / 2) - (pge->GetTextSizeProp("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSizeProp("X").y / 2));
+    pge->DrawStringPropDecal(close_position, "X", olc::BLACK);
 
     // Override top border with a darker color when window is inactive 
     if (!focused)
@@ -404,13 +404,13 @@ void FUI_Label::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0, 0);
 
-    olc::vf2d temp = { adaptive_position.x + position.x - ((pge->GetTextSize(text).x / 2) * text_scale.x),
-                       adaptive_position.y + position.y - ((pge->GetTextSize(text).y / 2) * text_scale.y) };
+    olc::vf2d temp = { adaptive_position.x + position.x - ((pge->GetTextSizeProp(text).x / 2) * text_scale.x),
+                       adaptive_position.y + position.y - ((pge->GetTextSizeProp(text).y / 2) * text_scale.y) };
 
     if (centered)
-        pge->DrawStringDecal(temp, text, text_color, text_scale);
+        pge->DrawStringPropDecal(temp, text, text_color, text_scale);
     else
-        pge->DrawStringDecal(adaptive_position + position, text, text_color, text_scale);
+        pge->DrawStringPropDecal(adaptive_position + position, text, text_color, text_scale);
 }
 
 /*
@@ -509,9 +509,9 @@ void FUI_Button::draw(olc::PixelGameEngine* pge)
         break;
     }
     // Draw the text
-    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - (pge->GetTextSize(text).x / 2),
-                                        adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
-    pge->DrawStringDecal(text_position, text, text_color, text_scale);
+    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - (pge->GetTextSizeProp(text).x / 2),
+                                        adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSizeProp(text).y / 2));
+    pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 }
 
 void FUI_Button::input(olc::PixelGameEngine* pge)
@@ -618,20 +618,20 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
     checkbox_position = adaptive_position + position;
 
     // Draw the text
-    olc::vf2d text_position = adaptive_position;
+    olc::vi2d text_position = adaptive_position;
     if (checkbox_orientation == "left")
     {
-        checkbox_position = olc::vf2d(adaptive_position.x + position.x + pge->GetTextSize(text).x + checkbox_padding, adaptive_position.y + position.y);
-        text_position = olc::vf2d(adaptive_position.x + position.x, adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
+        checkbox_position = olc::vf2d(adaptive_position.x + position.x + pge->GetTextSizeProp(text).x + checkbox_padding, adaptive_position.y + position.y);
+        text_position = olc::vi2d(adaptive_position.x + position.x, adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSizeProp(text).y / 2));
         pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
     }
     else if (checkbox_orientation == "right")
     {
-        text_position = olc::vf2d(adaptive_position.x + position.x + size.x + checkbox_padding,
-            adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
+        text_position = olc::vi2d(adaptive_position.x + position.x + size.x + checkbox_padding,
+            adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSizeProp(text).y / 2));
         pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
     }
-    pge->DrawStringDecal(text_position, text, text_color, text_scale);
+    pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
     olc::vf2d checkbox_filling = olc::vf2d(size.x / 10, size.y / 10);
     // Draw the body of the checkbox
