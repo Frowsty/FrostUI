@@ -335,7 +335,7 @@ public:
             if (orientation == "left" || orientation == "right")
                 checkbox_orientation = orientation;
             else
-                std::cout << "checkbox orientation not found, orientations are 'left' / 'right' (function affected: set_checkbox_orientation, affected checkbox_id: " + identifier + ")\n";
+                std::cout << "orientation '" + orientation + "' not found, orientations are 'left' and 'right' (function affected: set_checkbox_orientation, affected checkbox_id: " + identifier + ")\n";
     }
 
     void set_checkbox_padding(int padding) { if (ui_type == FUI_Type::CHECKBOX) checkbox_padding = padding; }
@@ -683,8 +683,6 @@ private:
     std::string active_group;
     std::deque<std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> elements;
 
-    void draw();
-
     void push_focused_to_back()
     {
         int i = 0;
@@ -982,7 +980,7 @@ void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::
         std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::draw()
+void olcPGEX_FrostUI::run()
 {
     push_focused_to_back();
     // Draw windows first
@@ -1044,11 +1042,6 @@ void olcPGEX_FrostUI::draw()
             e.second->input(pge);
         }
     }
-}
-
-void olcPGEX_FrostUI::run()
-{
-    draw();
 }
 
 #endif
