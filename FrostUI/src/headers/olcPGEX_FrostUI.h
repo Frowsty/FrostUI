@@ -66,7 +66,8 @@ FUI_Colors color_scheme;
 enum class FUI_Type
 {
     BUTTON = 0,
-    LABEL
+    LABEL,
+    CHECKBOX
 };
 
 class FUI_Window
@@ -300,7 +301,10 @@ public:
     std::string text;
     std::string group;
     olc::vf2d text_scale = { 1.0f, 1.0f };
+    FUI_Type ui_type;
 
+    std::string checkbox_orientation = "left";
+    int checkbox_padding = 5;
     bool centered = false;
     
     olc::Pixel text_color = olc::WHITE;
@@ -321,9 +325,20 @@ public:
 
     std::string get_group() { return group;  }
 
-    void set_centered(bool center) { centered = center; }
+    void set_centered(bool center) { if (ui_type == FUI_Type::LABEL) centered = center; }
 
     void scale_text(olc::vf2d scale) { text_scale = scale; }
+
+    void set_checkbox_orientation(std::string orientation) 
+    { 
+        if (ui_type == FUI_Type::CHECKBOX)
+            if (orientation == "left" || orientation == "right")
+                checkbox_orientation = orientation;
+            else
+                std::cout << "checkbox orientation not found, orientations are 'left' / 'right' (function affected: set_checkbox_orientation, affected checkbox_id: " + identifier + ")\n";
+    }
+
+    void set_checkbox_padding(int padding) { if (ui_type == FUI_Type::CHECKBOX) checkbox_padding = padding; }
 };
 
 /*
@@ -349,6 +364,7 @@ FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string t, olc::vi2d p)
     parent = pt;
     text = t;
     position = p;
+    ui_type = FUI_Type::LABEL;
 }
 FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string g, std::string t, olc::vi2d p)
 {
@@ -357,6 +373,7 @@ FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string g, std::string 
     text = t;
     position = p;
     group = g;
+    ui_type = FUI_Type::LABEL;
 }
 FUI_Label::FUI_Label(std::string id, std::string g, std::string t, olc::vi2d p)
 {
@@ -364,12 +381,14 @@ FUI_Label::FUI_Label(std::string id, std::string g, std::string t, olc::vi2d p)
     text = t;
     position = p;
     group = g;
+    ui_type = FUI_Type::LABEL;
 }
 FUI_Label::FUI_Label(std::string id, std::string t, olc::vi2d p)
 {
     identifier = id;
     text = t;
     position = p;
+    ui_type = FUI_Type::LABEL;
 }
 
 void FUI_Label::draw(olc::PixelGameEngine* pge)
@@ -397,7 +416,7 @@ void FUI_Label::draw(olc::PixelGameEngine* pge)
 class FUI_Button : public FUI_Element
 {
 private:
-    enum class Button_State
+    enum class State
     {
         NONE = 0,
         HOVER,
@@ -405,7 +424,7 @@ private:
     };
 
     std::function<void()> callback;
-    Button_State state = Button_State::NONE;
+    State state = State::NONE;
 
 public:
     FUI_Button(std::string id, FUI_Window* parent, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
@@ -426,6 +445,7 @@ FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string t, olc::vi2d 
     parent = pt;
     position = p;
     callback = cb;
+    ui_type = FUI_Type::BUTTON;
 }
 
 FUI_Button::FUI_Button(std::string id, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
@@ -435,6 +455,7 @@ FUI_Button::FUI_Button(std::string id, std::string t, olc::vi2d p, olc::vi2d s, 
     size = s;
     position = p;
     callback = cb;
+    ui_type = FUI_Type::BUTTON;
 }
 
 FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string g, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
@@ -446,6 +467,7 @@ FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string g, std::strin
     position = p;
     callback = cb;
     group = g;
+    ui_type = FUI_Type::BUTTON;
 }
 
 FUI_Button::FUI_Button(std::string id, std::string g, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
@@ -456,6 +478,7 @@ FUI_Button::FUI_Button(std::string id, std::string g, std::string t, olc::vi2d p
     position = p;
     callback = cb;
     group = g;
+    ui_type = FUI_Type::BUTTON;
 }
 
 void FUI_Button::draw(olc::PixelGameEngine* pge)
@@ -470,13 +493,13 @@ void FUI_Button::draw(olc::PixelGameEngine* pge)
     // Draw the body of the button
     switch (state)
     {
-    case Button_State::NONE:
+    case State::NONE:
         pge->FillRectDecal(adaptive_position + position, size, color_scheme.button_normal);
         break;
-    case Button_State::HOVER:
+    case State::HOVER:
         pge->FillRectDecal(adaptive_position + position, size, color_scheme.button_hover);
         break;
-    case Button_State::CLICK:
+    case State::CLICK:
         pge->FillRectDecal(adaptive_position + position, size, color_scheme.button_click);
         break;
     }
@@ -497,13 +520,153 @@ void FUI_Button::input(olc::PixelGameEngine* pge)
         {
             if (pge->GetMouse(0).bReleased)
                 callback();
-            state = Button_State::CLICK;
+            state = State::CLICK;
         }
         else
-            state = Button_State::HOVER;
+            state = State::HOVER;
     }
     else
-        state = Button_State::NONE;
+        state = State::NONE;
+}
+
+/*
+####################################################
+################FUI_CHECKBOX START##################
+####################################################
+*/
+class FUI_Checkbox : public FUI_Element
+{
+private:
+    enum class State
+    {
+        NONE = 0,
+        HOVER,
+        ACTIVE
+    };
+
+    olc::vf2d checkbox_position;
+    bool* checkbox_state;
+    State state = State::NONE;
+public:
+    FUI_Checkbox(std::string id, FUI_Window* parent, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
+    FUI_Checkbox(std::string id, FUI_Window* parent, std::string group, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
+    FUI_Checkbox(std::string id, std::string group, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
+    FUI_Checkbox(std::string id, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
+
+    void draw(olc::PixelGameEngine* pge) override;
+
+    void input(olc::PixelGameEngine* pge) override;
+};
+
+FUI_Checkbox::FUI_Checkbox(std::string id, FUI_Window* pt, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    ui_type = FUI_Type::CHECKBOX;
+    checkbox_state = cb_state;
+}
+
+FUI_Checkbox::FUI_Checkbox(std::string id, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    ui_type = FUI_Type::CHECKBOX;
+    checkbox_state = cb_state;
+}
+
+FUI_Checkbox::FUI_Checkbox(std::string id, FUI_Window* pt, std::string g, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::CHECKBOX;
+    checkbox_state = cb_state;
+}
+
+FUI_Checkbox::FUI_Checkbox(std::string id, std::string g, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::CHECKBOX;
+    checkbox_state = cb_state;
+}
+
+void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
+{
+    // Adapt positioning depending on if there's a parent to the element or not
+    if (parent)
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+    else
+        adaptive_position = olc::vi2d(0, 0);
+
+    checkbox_position = adaptive_position + position;
+
+    // Draw the text
+    olc::vf2d text_position = adaptive_position;
+    if (checkbox_orientation == "left")
+    {
+        checkbox_position = olc::vf2d(adaptive_position.x + position.x + pge->GetTextSize(text).x + checkbox_padding, adaptive_position.y + position.y);
+        text_position = olc::vf2d(adaptive_position.x + position.x, adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
+        pge->FillRectDecal(checkbox_position, size, color_scheme.button_normal);
+    }
+    else if (checkbox_orientation == "right")
+    {
+        text_position = olc::vf2d(adaptive_position.x + position.x + size.x + checkbox_padding,
+            adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSize(text).y / 2));
+        pge->FillRectDecal(checkbox_position, size, color_scheme.button_normal);
+    }
+    pge->DrawStringDecal(text_position, text, text_color, text_scale);
+
+    olc::vf2d checkbox_filling = olc::vf2d(size.x / 10, size.y / 10);
+    // Draw the body of the checkbox
+    switch (state)
+    {
+    case State::NONE:
+        *checkbox_state = false;
+        break;
+    case State::HOVER:
+        *checkbox_state = false;
+        pge->FillRectDecal(checkbox_position + checkbox_filling, 
+                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2 }, color_scheme.button_hover);
+        break;
+    case State::ACTIVE:
+        *checkbox_state = true;
+        pge->FillRectDecal(checkbox_position + checkbox_filling,
+                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2}, color_scheme.button_click);
+        break;
+    }
+}
+
+void FUI_Checkbox::input(olc::PixelGameEngine* pge)
+{
+    if (pge->GetMousePos().x >= checkbox_position.x &&
+        pge->GetMousePos().x <= checkbox_position.x + size.x &&
+        pge->GetMousePos().y >= checkbox_position.y &&
+        pge->GetMousePos().y <= checkbox_position.y + size.y)
+    {
+        if (pge->GetMouse(0).bHeld || pge->GetMouse(0).bPressed || pge->GetMouse(0).bReleased)
+        {
+            if (pge->GetMouse(0).bReleased && state == State::ACTIVE)
+                state = State::NONE;
+            else if (pge->GetMouse(0).bReleased)
+                state = State::ACTIVE;
+        }
+        else if (state != State::ACTIVE)
+            state = State::HOVER;
+    }
+    else if (state != State::ACTIVE)
+        state = State::NONE;
 }
 
 /*
@@ -621,6 +784,10 @@ public:
 
     void add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
+    void add_checkbox(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state);
+
+    void add_checkbox(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state);
+
     void add_label(std::string parent_id, std::string identifier, std::string text, olc::vi2d position);
 
     void add_label(std::string identifier, std::string text, olc::vi2d position);
@@ -717,6 +884,55 @@ void olcPGEX_FrostUI::add_label(std::string identifier, std::string text, olc::v
         std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
 }
 
+void olcPGEX_FrostUI::add_checkbox(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+{
+    if (!find_element(identifier))
+    {
+        if (windows.size() > 0)
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state)));
+                    else
+                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state)));
+                else
+                    std::cout << "Could not find parent window ID (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
+            }
+        }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_checkbox(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+{
+    if (!find_element(identifier))
+    {
+        if (!active_window_id.empty())
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state)));
+                    else
+                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state)));
+            }
+        }
+        else
+            if (!active_group.empty())
+                elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, active_group, text, position, size, cb_state)));
+            else
+                elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state)));
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_button, label_id affected: " + identifier + ")\n";
+}
+
 void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
     if (!find_element(identifier))
@@ -738,7 +954,7 @@ void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, 
             std::cout << "There's no windows to be used as parent (function affected: add_button, button_id affected: " + identifier + ")\n";
     }
     else
-        std::cout << "Duplicate IDs found (function affected: add_button, label_id affected: " + identifier + ")\n";
+        std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
 }
 
 void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
@@ -763,7 +979,7 @@ void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::
                 elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, text, position, size, callback)));
     }
     else
-        std::cout << "Duplicate IDs found (function affected: add_button, label_id affected: " + identifier + ")\n";
+        std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
 }
 
 void olcPGEX_FrostUI::draw()

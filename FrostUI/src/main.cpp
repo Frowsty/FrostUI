@@ -17,6 +17,9 @@ public:
     int i = 0;
     int j = 0;
 
+    bool checkbox_state = false;
+    bool last_cb_state = checkbox_state;
+
 public:
     bool OnUserCreate() override
     {
@@ -102,6 +105,12 @@ public:
                 }
             });
 
+        frost_ui.clear_active_group();
+
+        frost_ui.add_checkbox("id5", "HELLO WORLD", { 5, 75 }, { 15, 15 }, &checkbox_state);
+        frost_ui.find_element("id5")->set_text_color(olc::BLACK);
+        frost_ui.find_element("id5")->set_checkbox_orientation("down");
+        
         // Change the active group to tab_2 (every element will be automatically added to this group)
         frost_ui.set_active_group("tab_2");
         // Nesting buttons in the tab_2 group
@@ -138,7 +147,14 @@ public:
         if (GetKey(olc::ENTER).bPressed)
             frost_ui.find_window("new_window")->close_window(false);
 
+        if (checkbox_state != last_cb_state)
+            std::cout << checkbox_state << "\n";
+
+        last_cb_state = checkbox_state;
+
         frost_ui.run();
+
+
 
         return true;
     }
