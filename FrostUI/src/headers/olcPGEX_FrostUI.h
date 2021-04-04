@@ -1012,10 +1012,9 @@ void olcPGEX_FrostUI::run()
         }
     }
 
+    // arrange the deques containing the windows
     push_focused_to_back();
-
-    if (input_windows.size() == 0 || windows.back()->get_id() != input_windows.front()->get_id())
-        reverse_window_list();
+    reverse_window_list();
 
     if (windows.size() > 0)
     {
@@ -1037,7 +1036,6 @@ void olcPGEX_FrostUI::run()
             }
             
             window->draw();
-            
 
             // first = FUI_Type, second = FUI_Element
             for (auto& e : elements)
