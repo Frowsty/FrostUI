@@ -115,23 +115,23 @@ private:
     int border_thickness = 5;
 
 public:
-    FUI_Window(olc::PixelGameEngine* pge, std::string identifier, olc::vi2d position, olc::vi2d size, std::string title);
+    FUI_Window(olc::PixelGameEngine* pge, const std::string& identifier, olc::vi2d position, olc::vi2d size, const std::string& title);
 
     void draw();
 
     void input(std::deque<FUI_Window*> windows);
 
-    olc::vi2d get_position() { return position; }
+    olc::vi2d get_position() const { return position; }
 
-    olc::vi2d get_size() { return size; }
+    olc::vi2d get_size() const { return size; }
 
-    olc::vi2d get_window_space() { return olc::vi2d(size.x - border_thickness * 2, size.y - top_border_thickness); }
+    olc::vi2d get_window_space() const { return olc::vi2d(size.x - border_thickness * 2, size.y - top_border_thickness); }
 
-    std::string get_id() { return identifier; }
+    std::string get_id() const { return identifier; }
 
-    int get_top_border_thickness() { return top_border_thickness; }
+    int get_top_border_thickness() const { return top_border_thickness; }
 
-    int get_border_thickness() { return border_thickness; }
+    int get_border_thickness() const { return border_thickness; }
 
     void set_top_border_thickness(int thickness) { top_border_thickness = thickness; }
 
@@ -139,7 +139,7 @@ public:
 
     void close_window(bool close) { should_render = !close; }
 
-    bool get_closed_state() { return should_render; }
+    bool get_closed_state() const { return should_render; }
 
     void change_position(olc::vi2d pos) { position = pos; }
 
@@ -147,10 +147,10 @@ public:
 
     void set_focused(bool state) { focused = state; }
 
-    bool is_focused() { return focused; }
+    bool is_focused() const { return focused; }
 };
 
-FUI_Window::FUI_Window(olc::PixelGameEngine* p, std::string id, olc::vi2d pos, olc::vi2d s, std::string txt)
+FUI_Window::FUI_Window(olc::PixelGameEngine* p, const std::string& id, olc::vi2d pos, olc::vi2d s, const std::string& txt)
 {
     identifier = id;
     pge = p;
@@ -199,6 +199,7 @@ void FUI_Window::draw()
 
 void FUI_Window::input(std::deque<FUI_Window*> windows)
 {
+    overlapping_window = nullptr;
     for (auto& window : windows)
     {
         if (window->get_id() != identifier)
@@ -211,8 +212,6 @@ void FUI_Window::input(std::deque<FUI_Window*> windows)
                     overlapping_window = window;
                     break;
                 }
-                else
-                    overlapping_window = nullptr;
             }
         }
     }
@@ -324,11 +323,11 @@ public:
 
     void set_position(olc::vi2d p) { position = p; }
 
-    void set_text(std::string txt) { text = txt; }
+    void set_text(const std::string& txt) { text = txt; }
 
     void set_text_color(olc::Pixel color) { text_color = color; }
 
-    std::string get_group() { return group;  }
+    std::string get_group() const { return group;  }
 
     void set_centered(bool center) { if (ui_type == FUI_Type::LABEL) centered = center; }
 
@@ -355,15 +354,15 @@ public:
 class FUI_Label : public FUI_Element
 {
 public:
-    FUI_Label(std::string id, FUI_Window* parent, std::string text, olc::vi2d position);
-    FUI_Label(std::string id, FUI_Window* parent, std::string group, std::string text, olc::vi2d position);
-    FUI_Label(std::string id, std::string group, std::string text, olc::vi2d position);
-    FUI_Label(std::string id, std::string text, olc::vi2d position);
+    FUI_Label(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position);
+    FUI_Label(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position);
+    FUI_Label(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position);
+    FUI_Label(const std::string& id, const std::string& text, olc::vi2d position);
 
     void draw(olc::PixelGameEngine* pge) override;
 };
 
-FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string t, olc::vi2d p)
+FUI_Label::FUI_Label(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p)
 {
     identifier = id;
     parent = pt;
@@ -371,7 +370,7 @@ FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string t, olc::vi2d p)
     position = p;
     ui_type = FUI_Type::LABEL;
 }
-FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string g, std::string t, olc::vi2d p)
+FUI_Label::FUI_Label(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p)
 {
     identifier = id;
     parent = pt;
@@ -380,7 +379,7 @@ FUI_Label::FUI_Label(std::string id, FUI_Window* pt, std::string g, std::string 
     group = g;
     ui_type = FUI_Type::LABEL;
 }
-FUI_Label::FUI_Label(std::string id, std::string g, std::string t, olc::vi2d p)
+FUI_Label::FUI_Label(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p)
 {
     identifier = id;
     text = t;
@@ -388,7 +387,7 @@ FUI_Label::FUI_Label(std::string id, std::string g, std::string t, olc::vi2d p)
     group = g;
     ui_type = FUI_Type::LABEL;
 }
-FUI_Label::FUI_Label(std::string id, std::string t, olc::vi2d p)
+FUI_Label::FUI_Label(const std::string& id, const std::string& t, olc::vi2d p)
 {
     identifier = id;
     text = t;
@@ -432,17 +431,17 @@ private:
     State state = State::NONE;
 
 public:
-    FUI_Button(std::string id, FUI_Window* parent, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
-    FUI_Button(std::string id, FUI_Window* parent, std::string group, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
-    FUI_Button(std::string id, std::string group, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
-    FUI_Button(std::string id, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+    FUI_Button(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+    FUI_Button(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+    FUI_Button(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+    FUI_Button(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
     void draw(olc::PixelGameEngine* pge) override;
 
     void input(olc::PixelGameEngine* pge) override;
 };
 
-FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
+FUI_Button::FUI_Button(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
 {
     identifier = id;
     text = t;
@@ -453,7 +452,7 @@ FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string t, olc::vi2d 
     ui_type = FUI_Type::BUTTON;
 }
 
-FUI_Button::FUI_Button(std::string id, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
+FUI_Button::FUI_Button(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
 {
     identifier = id;
     text = t;
@@ -463,7 +462,7 @@ FUI_Button::FUI_Button(std::string id, std::string t, olc::vi2d p, olc::vi2d s, 
     ui_type = FUI_Type::BUTTON;
 }
 
-FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string g, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
+FUI_Button::FUI_Button(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
 {
     identifier = id;
     text = t;
@@ -475,7 +474,7 @@ FUI_Button::FUI_Button(std::string id, FUI_Window* pt, std::string g, std::strin
     ui_type = FUI_Type::BUTTON;
 }
 
-FUI_Button::FUI_Button(std::string id, std::string g, std::string t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
+FUI_Button::FUI_Button(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, std::function<void()> cb)
 {
     identifier = id;
     text = t;
@@ -553,17 +552,17 @@ private:
     bool* checkbox_state;
     State state = State::NONE;
 public:
-    FUI_Checkbox(std::string id, FUI_Window* parent, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
-    FUI_Checkbox(std::string id, FUI_Window* parent, std::string group, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
-    FUI_Checkbox(std::string id, std::string group, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
-    FUI_Checkbox(std::string id, std::string text, olc::vi2d position, olc::vi2d size, bool* state);
+    FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
+    FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
+    FUI_Checkbox(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
+    FUI_Checkbox(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
 
     void draw(olc::PixelGameEngine* pge) override;
 
     void input(olc::PixelGameEngine* pge) override;
 };
 
-FUI_Checkbox::FUI_Checkbox(std::string id, FUI_Window* pt, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+FUI_Checkbox::FUI_Checkbox(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
 {
     identifier = id;
     text = t;
@@ -574,7 +573,7 @@ FUI_Checkbox::FUI_Checkbox(std::string id, FUI_Window* pt, std::string t, olc::v
     checkbox_state = cb_state;
 }
 
-FUI_Checkbox::FUI_Checkbox(std::string id, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+FUI_Checkbox::FUI_Checkbox(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
 {
     identifier = id;
     text = t;
@@ -584,7 +583,7 @@ FUI_Checkbox::FUI_Checkbox(std::string id, std::string t, olc::vi2d p, olc::vi2d
     checkbox_state = cb_state;
 }
 
-FUI_Checkbox::FUI_Checkbox(std::string id, FUI_Window* pt, std::string g, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+FUI_Checkbox::FUI_Checkbox(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
 {
     identifier = id;
     text = t;
@@ -596,7 +595,7 @@ FUI_Checkbox::FUI_Checkbox(std::string id, FUI_Window* pt, std::string g, std::s
     checkbox_state = cb_state;
 }
 
-FUI_Checkbox::FUI_Checkbox(std::string id, std::string g, std::string t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+FUI_Checkbox::FUI_Checkbox(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
 {
     identifier = id;
     text = t;
@@ -683,6 +682,7 @@ class olcPGEX_FrostUI : public olc::PGEX
 {
 private:
     std::deque<FUI_Window*> windows;
+    std::deque<FUI_Window*> input_windows;
     std::vector<std::string> groups;
     std::string active_window_id;
     std::string active_group;
@@ -706,6 +706,15 @@ private:
             i++;
         }
     }
+
+    void reverse_window_list()
+    {
+        input_windows.clear();
+        for (auto& window : windows)
+        {
+            input_windows.push_front(window);
+        }
+    }
 public:
 
     void set_active_window(std::string window_id) 
@@ -724,7 +733,7 @@ public:
             std::cout << "Could not find the window ID in added windows (function affected: set_active_window, affected window_id: " + window_id + ")\n";
     }
 
-    void set_active_group(std::string g)
+    void set_active_group(const std::string& g)
     {
         for (auto group : groups)
         {
@@ -740,7 +749,7 @@ public:
             std::cout << "Could not find the group ID in added windows (function affected: set_active_group, affected window_id: " + g + ")\n";
     }
     
-    FUI_Window* create_window(std::string identifier, olc::vi2d position, olc::vi2d size, std::string title)
+    FUI_Window* create_window(const std::string& identifier, olc::vi2d position, olc::vi2d size, const std::string& title)
     {
         bool is_duplicate = false;
         FUI_Window* temp_window = nullptr;
@@ -763,7 +772,7 @@ public:
         return temp_window;
     }
 
-    void add_group(std::string g) 
+    void add_group(const std::string& g) 
     {
         bool is_duplicate = false;
         for (auto group : groups)
@@ -779,23 +788,23 @@ public:
 
     void clear_active_group() { active_group.clear(); }
 
-    std::string get_active_group() { return active_group; }
+    const std::string& get_active_group() { return active_group; }
 
     void run();
 
-    void add_button(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+    void add_button(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
-    void add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+    void add_button(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
-    void add_checkbox(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state);
+    void add_checkbox(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state);
 
-    void add_checkbox(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state);
+    void add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state);
 
-    void add_label(std::string parent_id, std::string identifier, std::string text, olc::vi2d position);
+    void add_label(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
 
-    void add_label(std::string identifier, std::string text, olc::vi2d position);
+    void add_label(const std::string& identifier, const std::string& text, olc::vi2d position);
 
-    FUI_Window* find_window(std::string identifier)
+    FUI_Window* find_window(const std::string& identifier)
     {
         for (auto& window : windows)
         {
@@ -806,15 +815,15 @@ public:
         return nullptr;
     }
 
-    std::shared_ptr<FUI_Element> find_element(std::string identifier);
+    std::shared_ptr<FUI_Element> find_element(const std::string& identifier);
 
-    void remove_element(std::string identifier);
+    void remove_element(const std::string& identifier);
 
     int get_element_amount() { return elements.size(); }
 
 };
 
-void olcPGEX_FrostUI::remove_element(std::string id)
+void olcPGEX_FrostUI::remove_element(const std::string& id)
 {
     int i = 0;
     for (auto& element : elements)
@@ -828,7 +837,7 @@ void olcPGEX_FrostUI::remove_element(std::string id)
     }
 }
 
-std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(std::string id)
+std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(const std::string& id)
 {
     for (auto& element : elements)
     {
@@ -838,7 +847,7 @@ std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(std::string id)
     return nullptr;
 }
 
-void olcPGEX_FrostUI::add_label(std::string parent_id, std::string identifier, std::string text, olc::vi2d position)
+void olcPGEX_FrostUI::add_label(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position)
 {
     if (!find_element(identifier))
     {
@@ -862,7 +871,7 @@ void olcPGEX_FrostUI::add_label(std::string parent_id, std::string identifier, s
         std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::add_label(std::string identifier, std::string text, olc::vi2d position)
+void olcPGEX_FrostUI::add_label(const std::string& identifier, const std::string& text, olc::vi2d position)
 {
     if (!find_element(identifier))
     {
@@ -887,7 +896,7 @@ void olcPGEX_FrostUI::add_label(std::string identifier, std::string text, olc::v
         std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::add_checkbox(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+void olcPGEX_FrostUI::add_checkbox(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
 {
     if (!find_element(identifier))
     {
@@ -911,7 +920,7 @@ void olcPGEX_FrostUI::add_checkbox(std::string parent_id, std::string identifier
         std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::add_checkbox(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+void olcPGEX_FrostUI::add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
 {
     if (!find_element(identifier))
     {
@@ -936,7 +945,7 @@ void olcPGEX_FrostUI::add_checkbox(std::string identifier, std::string text, olc
         std::cout << "Duplicate IDs found (function affected: add_button, label_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+void olcPGEX_FrostUI::add_button(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
     if (!find_element(identifier))
     {
@@ -960,7 +969,7 @@ void olcPGEX_FrostUI::add_button(std::string parent_id, std::string identifier, 
         std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::add_button(std::string identifier, std::string text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+void olcPGEX_FrostUI::add_button(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
     if (!find_element(identifier))
     {
@@ -1004,6 +1013,17 @@ void olcPGEX_FrostUI::run()
     }
 
     push_focused_to_back();
+
+    if (input_windows.size() == 0 || windows.back()->get_id() != input_windows.front()->get_id())
+        reverse_window_list();
+
+    if (windows.size() > 0)
+    {
+        for (auto& window : input_windows)
+        {
+            window->input(windows);
+        }
+    }
     // Draw windows first
     if (windows.size() > 0)
     {
@@ -1016,7 +1036,6 @@ void olcPGEX_FrostUI::run()
                 continue;
             }
             
-            window->input(windows);
             window->draw();
             
 
