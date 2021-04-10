@@ -19,6 +19,8 @@ public:
 
     bool checkbox_state = false;
     bool last_cb_state = checkbox_state;
+    bool button_state = false;
+    bool last_btn_state = button_state;
 
 public:
     bool OnUserCreate() override
@@ -95,6 +97,9 @@ public:
                 }
             });
 
+        frost_ui.add_button("id99", "Toggle Button", { 5, 125 }, { 100, 20 }, nullptr);
+        frost_ui.find_element("id99")->make_toggleable(&button_state);
+
         frost_ui.clear_active_group();
 
         frost_ui.add_checkbox("id5", "HELLO WORLD", { 5, 75 }, { 15, 15 }, &checkbox_state);
@@ -139,12 +144,13 @@ public:
 
         if (checkbox_state != last_cb_state)
             std::cout << checkbox_state << "\n";
+        if (button_state != last_btn_state)
+            std::cout << button_state << "\n";
 
+        last_btn_state = button_state;
         last_cb_state = checkbox_state;
 
         frost_ui.run();
-
-
 
         return true;
     }

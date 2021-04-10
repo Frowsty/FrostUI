@@ -3,7 +3,7 @@
 
     +-------------------------------------------------------------+
     |         OneLoneCoder Pixel Game Engine Extension            |
-    |                FrostUI - v2.0.0			              |
+    |                FrostUI - v1.0.0			              |
     +-------------------------------------------------------------+
 
     What is this?
@@ -139,7 +139,7 @@ public:
 
     void close_window(bool close) { should_render = !close; }
 
-    bool get_closed_state() const { return should_render; }
+    bool get_closed_state() const { return !should_render; }
 
     void change_position(olc::vi2d pos) { position = pos; }
 
@@ -202,6 +202,8 @@ void FUI_Window::input(std::deque<FUI_Window*> windows)
     overlapping_window = nullptr;
     for (auto& window : windows)
     {
+        if (window->get_closed_state())
+            continue;
         if (window->get_id() != identifier)
         {
             if (window->is_focused())
@@ -246,15 +248,7 @@ void FUI_Window::input(std::deque<FUI_Window*> windows)
             new_window_position = pge->GetMousePos() - mouse_difference;
 
 
-        // clamp window to not go out of screen
-        if (!(new_window_position.x <= 0 || new_window_position.x + size.x >= pge->GetWindowSize().x))
-            position.x = new_window_position.x;
-        else
-            mouse_difference = pge->GetMousePos() - position;
-        if (!(new_window_position.y <= 0 || new_window_position.y + size.y >= pge->GetWindowSize().y))
-            position.y = new_window_position.y;
-        else
-            mouse_difference = pge->GetMousePos() - position;
+        position = new_window_position;
     }
 
     if (pge->GetMouse(0).bReleased)
@@ -310,7 +304,8 @@ public:
     std::string checkbox_orientation = "left";
     int checkbox_padding = 5;
     bool centered = false;
-    
+    bool* toggle_button_state = nullptr;
+
     olc::Pixel text_color = olc::WHITE;
 
     std::string identifier;
@@ -327,14 +322,14 @@ public:
 
     void set_text_color(olc::Pixel color) { text_color = color; }
 
-    std::string get_group() const { return group;  }
+    std::string get_group() const { return group; }
 
     void set_centered(bool center) { if (ui_type == FUI_Type::LABEL) centered = center; }
 
     void scale_text(olc::vf2d scale) { text_scale = scale; }
 
-    void set_checkbox_orientation(std::string orientation) 
-    { 
+    void set_checkbox_orientation(std::string orientation)
+    {
         if (ui_type == FUI_Type::CHECKBOX)
             if (orientation == "left" || orientation == "right")
                 checkbox_orientation = orientation;
@@ -343,6 +338,8 @@ public:
     }
 
     void set_checkbox_padding(int padding) { if (ui_type == FUI_Type::CHECKBOX) checkbox_padding = padding; }
+
+    void make_toggleable(bool* state) { if (ui_type == FUI_Type::BUTTON) toggle_button_state = state; }
 };
 
 /*
@@ -515,22 +512,46 @@ void FUI_Button::draw(olc::PixelGameEngine* pge)
 
 void FUI_Button::input(olc::PixelGameEngine* pge)
 {
-    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
-        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
-        pge->GetMousePos().y >= adaptive_position.y + position.y &&
-        pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
+    if (!toggle_button_state)
     {
-        if (pge->GetMouse(0).bHeld || pge->GetMouse(0).bPressed || pge->GetMouse(0).bReleased)
+        if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+            pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+            pge->GetMousePos().y >= adaptive_position.y + position.y &&
+            pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
         {
-            if (pge->GetMouse(0).bReleased)
+            if (pge->GetMouse(0).bPressed)
                 callback();
-            state = State::CLICK;
+            else
+                state = State::HOVER;
         }
         else
-            state = State::HOVER;
+            state = State::NONE;
     }
     else
-        state = State::NONE;
+    {
+        if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+            pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+            pge->GetMousePos().y >= adaptive_position.y + position.y &&
+            pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
+        {
+            if (pge->GetMouse(0).bPressed)
+            {
+                if (state == State::CLICK)
+                        state = State::NONE;
+                else
+                    state = State::CLICK;
+            }
+            else if (state != State::CLICK)
+                state = State::HOVER;
+        }
+        else if (state != State::CLICK)
+            state = State::NONE;
+
+        if (state == State::CLICK)
+            *toggle_button_state = true;
+        else
+            *toggle_button_state = false;
+    }
 }
 
 /*
@@ -659,11 +680,11 @@ void FUI_Checkbox::input(olc::PixelGameEngine* pge)
         pge->GetMousePos().y >= checkbox_position.y &&
         pge->GetMousePos().y <= checkbox_position.y + size.y)
     {
-        if (pge->GetMouse(0).bHeld || pge->GetMouse(0).bPressed || pge->GetMouse(0).bReleased)
+        if (pge->GetMouse(0).bPressed)
         {
-            if (pge->GetMouse(0).bReleased && state == State::ACTIVE)
+            if (state == State::ACTIVE)
                 state = State::NONE;
-            else if (pge->GetMouse(0).bReleased)
+            else
                 state = State::ACTIVE;
         }
         else if (state != State::ACTIVE)
@@ -682,7 +703,6 @@ class olcPGEX_FrostUI : public olc::PGEX
 {
 private:
     std::deque<FUI_Window*> windows;
-    std::deque<FUI_Window*> input_windows;
     std::vector<std::string> groups;
     std::string active_window_id;
     std::string active_group;
@@ -693,7 +713,7 @@ private:
         int i = 0;
         for (auto& window : windows)
         {
-            if (!window->get_closed_state())
+            if (window->get_closed_state())
             {
                 i++;
                 continue;
@@ -704,15 +724,6 @@ private:
                 windows.erase(windows.begin() + i);
             }
             i++;
-        }
-    }
-
-    void reverse_window_list()
-    {
-        input_windows.clear();
-        for (auto& window : windows)
-        {
-            input_windows.push_front(window);
         }
     }
 public:
@@ -790,8 +801,6 @@ public:
 
     const std::string& get_active_group() { return active_group; }
 
-    void run();
-
     void add_button(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
     void add_button(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
@@ -821,6 +830,7 @@ public:
 
     int get_element_amount() { return elements.size(); }
 
+    void run();
 };
 
 void olcPGEX_FrostUI::remove_element(const std::string& id)
@@ -1014,21 +1024,20 @@ void olcPGEX_FrostUI::run()
 
     // arrange the deques containing the windows
     push_focused_to_back();
-    reverse_window_list();
 
-    if (windows.size() > 0)
-    {
-        for (auto& window : input_windows)
-        {
-            window->input(windows);
-        }
-    }
     // Draw windows first
     if (windows.size() > 0)
     {
+        // make sure input is run in reverse order of drawing to not allow through window presses when out of focus
+        for (int i = windows.size() - 1; i >= 0; i--)
+        {
+            if (!windows[i]->get_closed_state())
+                windows[i]->input(windows);
+        }
+
         for (auto& window : windows)
         {
-            if (!window->get_closed_state())
+            if (window->get_closed_state())
             {
                 if (window->is_focused())
                     window->set_focused(false);
