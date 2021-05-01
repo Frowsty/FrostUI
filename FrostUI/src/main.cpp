@@ -32,30 +32,19 @@ public:
         auto new_window3 = frost_ui.create_window("new_window3", { 10, 300 }, { 490, 250 }, "New Window");
         auto new_window4 = frost_ui.create_window("new_window4", { 300, 200 }, { 490, 250 }, "New Window");
 
-        // Set window appearance
-        main_window->set_top_border_thickness(20);
-        main_window->set_border_thickness(5);
-
-        // Set window appearance
-        new_window1->set_top_border_thickness(20);
-        new_window1->set_border_thickness(5);
-
-        // Set window appearance
-        new_window2->set_top_border_thickness(20);
-        new_window2->set_border_thickness(5);
-
-        // Set window appearance
-        new_window3->set_top_border_thickness(20);
-        new_window3->set_border_thickness(5);
-
-        // Set window appearance
-        new_window4->set_top_border_thickness(20);
-        new_window4->set_border_thickness(5);
-
         // Create groups for respective tabs
         frost_ui.add_group("tab_1");
         frost_ui.add_group("tab_2");
         frost_ui.add_group("tab_3");
+
+        frost_ui.set_active_window("new_window");
+
+        // dropdown example
+        frost_ui.add_dropdown("dropID1", "Select an item: ", { 100, 30 }, { 100, 20 });
+        frost_ui.find_element("dropID1")->set_text_color(olc::BLACK);
+        frost_ui.find_element("dropID1")->scale_text({ 1.0f, 1.0f });
+        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f, }, "Cool item");
+        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f, }, "Cool item2");
 
         // Set the active window (window that will be used to add elements)
         frost_ui.set_active_window("main_window");
@@ -69,13 +58,13 @@ public:
         // Set the active group to tab_1 (every element that is added to the UI instance will now be a part of this group)
         frost_ui.set_active_group("tab_1");
 
-        frost_ui.add_label("label_1", "Test label", { 200, 40 });
+        frost_ui.add_label("label_1", "Test label", { 245, 40 });
         auto temp_var = frost_ui.find_element("label_1");
         if (!frost_ui.find_window("main_window"))
             temp_var->set_text_color(olc::WHITE);
         else
             temp_var->set_text_color(olc::BLACK);
-        frost_ui.find_element("label_1")->set_centered(false);
+        frost_ui.find_element("label_1")->set_centered(true);
 
         // Nesting buttons in the tab_1 group
         frost_ui.add_button("id1", "Test Button", { 5, 25 }, { 100, 20 }, [&]
@@ -102,10 +91,10 @@ public:
 
         frost_ui.clear_active_group();
 
-        frost_ui.add_checkbox("id5", "HELLO WORLD", { 5, 75 }, { 15, 15 }, &checkbox_state);
+        frost_ui.add_checkbox("id5", "HELLO WORLD", { 5, 75 }, { 20, 20 }, &checkbox_state);
         frost_ui.find_element("id5")->set_text_color(olc::BLACK);
         frost_ui.find_element("id5")->set_checkbox_orientation("left");
-        
+
         // Change the active group to tab_2 (every element will be automatically added to this group)
         frost_ui.set_active_group("tab_2");
         // Nesting buttons in the tab_2 group

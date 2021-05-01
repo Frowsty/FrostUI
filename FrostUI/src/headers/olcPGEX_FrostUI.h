@@ -71,6 +71,10 @@ struct FUI_Colors
     olc::Pixel checkbox_normal = olc::GREY;
     olc::Pixel checkbox_hover = { 150, 150, 150 };
     olc::Pixel checkbox_active = { 100, 100, 100 };
+    // dropdown colors
+    olc::Pixel dropdown_normal = olc::GREY;
+    olc::Pixel dropdown_hover = { 150, 150, 150 };
+    olc::Pixel dropdown_active = { 100, 100, 100 };
 };
 
 FUI_Colors color_scheme;
@@ -79,8 +83,19 @@ enum class FUI_Type
 {
     BUTTON = 0,
     LABEL,
-    CHECKBOX
+    CHECKBOX,
+    DROPDOWN
 };
+
+olc::vf2d auto_scaling(olc::vf2d text_size, olc::vf2d text_scale, olc::vf2d element_size)
+{
+    while ((text_size.y * text_scale.y) < element_size.y)
+    {
+        text_scale.y += 0.001;
+    }
+    std::cout << text_scale.y << '\n';
+    return text_scale;
+}
 
 class FUI_Window
 {
@@ -287,6 +302,12 @@ void FUI_Window::input(std::deque<FUI_Window*> windows)
 ################FUI_ELEMENT START###################
 ####################################################
 */
+enum class DropdownState
+{
+    NONE = 0,
+    HOVER,
+    ACTIVE
+};
 
 class FUI_Element
 {
@@ -306,6 +327,9 @@ public:
     bool centered = false;
     bool* toggle_button_state = nullptr;
 
+    std::vector<std::pair<DropdownState, std::pair<olc::vf2d, std::string>>> elements;
+    float animation_speed = 150.0f;
+
     olc::Pixel text_color = olc::WHITE;
 
     std::string identifier;
@@ -324,7 +348,7 @@ public:
 
     std::string get_group() const { return group; }
 
-    void set_centered(bool center) { if (ui_type == FUI_Type::LABEL) centered = center; }
+    void set_centered(bool center) { if (ui_type == FUI_Type::LABEL) centered = center; else std::cout << "Trying to set_centered on wrong UI_TYPE\n"; }
 
     void scale_text(olc::vf2d scale) { text_scale = scale; }
 
@@ -337,9 +361,13 @@ public:
                 std::cout << "orientation '" + orientation + "' not found, orientations are 'left' and 'right' (function affected: set_checkbox_orientation, affected checkbox_id: " + identifier + ")\n";
     }
 
-    void set_checkbox_padding(int padding) { if (ui_type == FUI_Type::CHECKBOX) checkbox_padding = padding; }
+    void set_checkbox_padding(int padding) { if (ui_type == FUI_Type::CHECKBOX) checkbox_padding = padding; else std::cout << "Trying to set padding on wrong UI_TYPE\n"; }
 
-    void make_toggleable(bool* state) { if (ui_type == FUI_Type::BUTTON) toggle_button_state = state; }
+    void make_toggleable(bool* state) { if (ui_type == FUI_Type::BUTTON) toggle_button_state = state; else std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n"; }
+
+    void add_item(olc::vf2d scale, const std::string& item) { if (ui_type == FUI_Type::DROPDOWN)  elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item))); else std::cout << "Trying to add_item to wrong UI_TYPE\n"; }
+    
+    void set_animation_speed(float speed) { if (ui_type == FUI_Type::DROPDOWN) animation_speed = speed; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
 };
 
 /*
@@ -400,8 +428,8 @@ void FUI_Label::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0, 0);
 
-    olc::vf2d temp = { adaptive_position.x + position.x - ((pge->GetTextSizeProp(text).x / 2) * text_scale.x),
-                       adaptive_position.y + position.y - ((pge->GetTextSizeProp(text).y / 2) * text_scale.y) };
+    olc::vf2d temp = { adaptive_position.x + position.x - ((pge->GetTextSizeProp(text).x * text_scale.x) / 2),
+                       adaptive_position.y + position.y - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2) };
 
     if (centered)
         pge->DrawStringPropDecal(temp, text, text_color, text_scale);
@@ -505,8 +533,8 @@ void FUI_Button::draw(olc::PixelGameEngine* pge)
         break;
     }
     // Draw the text
-    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - (pge->GetTextSizeProp(text).x / 2),
-                                        adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSizeProp(text).y / 2));
+    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(text).x * text_scale.x) / 2),
+                                        adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 }
 
@@ -638,17 +666,18 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
     checkbox_position = adaptive_position + position;
 
     // Draw the text
-    olc::vi2d text_position = adaptive_position;
+    olc::vf2d text_position = adaptive_position;
     if (checkbox_orientation == "left")
     {
         checkbox_position = olc::vf2d(adaptive_position.x + position.x + pge->GetTextSizeProp(text).x + checkbox_padding, adaptive_position.y + position.y);
-        text_position = olc::vi2d(adaptive_position.x + position.x, adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSizeProp(text).y / 2));
+        text_position = olc::vf2d(adaptive_position.x + position.x,
+            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
         pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
     }
     else if (checkbox_orientation == "right")
     {
-        text_position = olc::vi2d(adaptive_position.x + position.x + size.x + checkbox_padding,
-            adaptive_position.y + position.y + (size.y / 2) - (pge->GetTextSizeProp(text).y / 2));
+        text_position = olc::vf2d(adaptive_position.x + position.x + size.x + checkbox_padding,
+            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
         pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
     }
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
@@ -696,6 +725,192 @@ void FUI_Checkbox::input(olc::PixelGameEngine* pge)
 
 /*
 ####################################################
+################FUI_DROPDOWN START##################
+####################################################
+*/
+class FUI_Dropdown : public FUI_Element
+{
+private:
+    olc::vf2d active_size = olc::vf2d(0, 0);
+    std::pair<olc::vf2d, std::string> selected_element;
+    DropdownState state = DropdownState::NONE;
+    bool is_open = false;
+public:
+    FUI_Dropdown(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Dropdown(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Dropdown(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Dropdown(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void draw(olc::PixelGameEngine* pge) override;
+
+    void input(olc::PixelGameEngine* pge) override;
+};
+
+FUI_Dropdown::FUI_Dropdown(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    ui_type = FUI_Type::DROPDOWN;
+}
+
+FUI_Dropdown::FUI_Dropdown(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    ui_type = FUI_Type::DROPDOWN;
+}
+
+FUI_Dropdown::FUI_Dropdown(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::DROPDOWN;
+}
+
+FUI_Dropdown::FUI_Dropdown(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::DROPDOWN;
+}
+
+void FUI_Dropdown::draw(olc::PixelGameEngine* pge)
+{
+    // Adapt positioning depending on if there's a parent to the element or not
+    if (parent)
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+    else
+        adaptive_position = olc::vi2d(0, 0);
+
+    if (is_open)
+    {
+        float future_y = size.y * elements.size();
+        active_size.y += animation_speed * pge->GetElapsedTime();
+        if (active_size.y >= future_y)
+            active_size.y = future_y;
+    }
+    else
+    {
+        active_size.y -= animation_speed * pge->GetElapsedTime();
+        if (active_size.y <= 0)
+            active_size.y = 0;
+    }
+    
+    // title position
+    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x - (pge->GetTextSizeProp(text).x * text_scale.x),
+        adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
+    pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
+
+    switch (state)
+    {
+    case DropdownState::NONE:
+        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_normal);
+        break;
+    case DropdownState::HOVER:
+        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_hover);
+        break;
+    }
+    if (active_size.y != size.y * elements.size())
+        pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
+
+    if (!selected_element.second.empty())
+    {
+        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(selected_element.second).x * selected_element.first.x) / 2),
+            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(selected_element.second).y * selected_element.first.y) / 2));
+        pge->DrawStringPropDecal(text_position, selected_element.second, text_color, selected_element.first);
+    }
+
+    int i = 1;
+    for (auto& element : elements)
+    {
+        if (active_size.y == size.y * elements.size())
+        {
+            switch (element.first)
+            {
+            case DropdownState::NONE:
+                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
+                break;
+            case DropdownState::HOVER:
+                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
+                break;
+            }
+        }
+        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(element.second.second).x * element.second.first.x) / 2),
+            adaptive_position.y + position.y + size.y + (size.y * i) - (size.y / 2) - ((pge->GetTextSizeProp(element.second.second).y * element.second.first.y) / 2));
+        if (adaptive_position.y + position.y + size.y + active_size.y > text_position.y + (pge->GetTextSizeProp(element.second.second).y + element.second.first.y))
+            pge->DrawStringPropDecal(text_position, element.second.second, olc::BLACK, element.second.first);
+        i++;
+    }
+}
+
+void FUI_Dropdown::input(olc::PixelGameEngine* pge)
+{
+    bool could_close = false;
+    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+        pge->GetMousePos().y >= adaptive_position.y + position.y &&
+        pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
+    {
+        if (pge->GetMouse(0).bPressed)
+        {
+            if (is_open)
+                is_open = false;
+            else
+                is_open = true;
+        }
+        else
+            state = DropdownState::HOVER;
+    }
+    else
+    {
+        state = DropdownState::NONE;
+        if (pge->GetMouse(0).bPressed)
+            could_close = true;
+    }
+
+
+    if (is_open)
+    {
+        int i = 1;
+        for (auto& element : elements)
+        {
+            if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                pge->GetMousePos().y >= adaptive_position.y + position.y + (size.y * i) &&
+                pge->GetMousePos().y <= adaptive_position.y + position.y + (size.y * i) + size.y)
+            {
+                if (pge->GetMouse(0).bPressed)
+                {
+                    selected_element = std::make_pair(element.second.first, element.second.second);
+                    is_open = false;
+                }
+                else
+                    element.first = DropdownState::HOVER;
+            }
+            else
+            {
+                element.first = DropdownState::NONE;
+                if (could_close && pge->GetMouse(0).bPressed)
+                    is_open = false;
+            }
+            i++;
+        }
+    }
+}
+/*
+####################################################
 ################FUI_HANDLER START###################
 ####################################################
 */
@@ -728,7 +943,7 @@ private:
     }
 public:
 
-    void set_active_window(std::string window_id) 
+    void set_active_window(const std::string& window_id) 
     { 
         for (auto& window : windows) 
         { 
@@ -801,15 +1016,19 @@ public:
 
     const std::string& get_active_group() { return active_group; }
 
-    void add_button(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
+    void add_button(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
     void add_button(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
-    void add_checkbox(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state);
+    void add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state);
 
     void add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state);
 
-    void add_label(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
+    void add_dropdown(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void add_dropdown(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
 
     void add_label(const std::string& identifier, const std::string& text, olc::vi2d position);
 
@@ -857,7 +1076,7 @@ std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(const std::string& id
     return nullptr;
 }
 
-void olcPGEX_FrostUI::add_label(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position)
+void olcPGEX_FrostUI::add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position)
 {
     if (!find_element(identifier))
     {
@@ -906,7 +1125,7 @@ void olcPGEX_FrostUI::add_label(const std::string& identifier, const std::string
         std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::add_checkbox(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+void olcPGEX_FrostUI::add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
 {
     if (!find_element(identifier))
     {
@@ -952,10 +1171,59 @@ void olcPGEX_FrostUI::add_checkbox(const std::string& identifier, const std::str
                 elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state)));
     }
     else
-        std::cout << "Duplicate IDs found (function affected: add_button, label_id affected: " + identifier + ")\n";
+        std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
 }
 
-void olcPGEX_FrostUI::add_button(std::string parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+void olcPGEX_FrostUI::add_dropdown(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (windows.size() > 0)
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, text, position, size)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size)));
+                else
+                    std::cout << "Could not find parent window ID (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
+            }
+        }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_dropdown(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (!active_window_id.empty())
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, text, position, size)));
+            }
+        }
+        else
+            if (!active_group.empty())
+                elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, active_group, text, position, size)));
+            else
+                elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, text, position, size)));
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_button(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
     if (!find_element(identifier))
     {
@@ -1007,6 +1275,7 @@ void olcPGEX_FrostUI::add_button(const std::string& identifier, const std::strin
 void olcPGEX_FrostUI::run()
 {
     // Draw standalone elements first (standalone elements are elements without a parent / window)
+    
     for (auto& e : elements)
     {
         if (!e.second)
@@ -1021,7 +1290,7 @@ void olcPGEX_FrostUI::run()
             e.second->input(pge);
         }
     }
-
+    
     // arrange the deques containing the windows
     push_focused_to_back();
 
