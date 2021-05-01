@@ -328,6 +328,7 @@ public:
     bool* toggle_button_state = nullptr;
 
     std::vector<std::pair<DropdownState, std::pair<olc::vf2d, std::string>>> elements;
+    std::pair<olc::vf2d, std::string> selected_element;
     float animation_speed = 150.0f;
 
     olc::Pixel text_color = olc::WHITE;
@@ -368,6 +369,8 @@ public:
     void add_item(olc::vf2d scale, const std::string& item) { if (ui_type == FUI_Type::DROPDOWN)  elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item))); else std::cout << "Trying to add_item to wrong UI_TYPE\n"; }
     
     void set_animation_speed(float speed) { if (ui_type == FUI_Type::DROPDOWN) animation_speed = speed; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
+
+    std::string get_selected_item() { if (ui_type == FUI_Type::DROPDOWN) return selected_element.second; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
 };
 
 /*
@@ -732,7 +735,6 @@ class FUI_Dropdown : public FUI_Element
 {
 private:
     olc::vf2d active_size = olc::vf2d(0, 0);
-    std::pair<olc::vf2d, std::string> selected_element;
     DropdownState state = DropdownState::NONE;
     bool is_open = false;
 public:

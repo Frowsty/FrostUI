@@ -22,6 +22,9 @@ public:
     bool button_state = false;
     bool last_btn_state = button_state;
 
+    std::string current_element = "";
+    std::string old_element = "";
+
 public:
     bool OnUserCreate() override
     {
@@ -135,9 +138,15 @@ public:
             std::cout << checkbox_state << "\n";
         if (button_state != last_btn_state)
             std::cout << button_state << "\n";
+        if (current_element != old_element)
+        {
+            current_element = frost_ui.find_element("dropID1")->get_selected_item();
+            std::cout << current_element << "\n";
+        }
 
         last_btn_state = button_state;
         last_cb_state = checkbox_state;
+        old_element = frost_ui.find_element("dropID1")->get_selected_item();
 
         frost_ui.run();
 
