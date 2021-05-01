@@ -25,6 +25,9 @@ public:
     std::string current_element = "";
     std::string old_element = "";
 
+    std::vector<std::string> current_elements;
+    std::vector<std::string> old_elements;
+
 public:
     bool OnUserCreate() override
     {
@@ -46,8 +49,15 @@ public:
         frost_ui.add_dropdown("dropID1", "Select an item: ", { 100, 30 }, { 100, 20 });
         frost_ui.find_element("dropID1")->set_text_color(olc::BLACK);
         frost_ui.find_element("dropID1")->scale_text({ 1.0f, 1.0f });
-        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f, }, "Cool item");
-        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f, }, "Cool item2");
+        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f }, "Cool item");
+        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f }, "Cool item2");
+
+        // dropdown example
+        frost_ui.add_combolist("comboID1", "Select items: ", { 300, 30 }, { 100, 20 });
+        frost_ui.find_element("comboID1")->set_text_color(olc::BLACK);
+        frost_ui.find_element("comboID1")->scale_text({ 1.0f, 1.0f });
+        frost_ui.find_element("comboID1")->add_item({ 1.0f, 1.0f }, "Cool item");
+        frost_ui.find_element("comboID1")->add_item({ 1.0f, 1.0f }, "Cool item2");
 
         // Set the active window (window that will be used to add elements)
         frost_ui.set_active_window("main_window");
@@ -143,10 +153,19 @@ public:
             current_element = frost_ui.find_element("dropID1")->get_selected_item();
             std::cout << current_element << "\n";
         }
+        if (current_elements.size() != old_elements.size())
+        {
+            current_elements = frost_ui.find_element("comboID1")->get_selected_items();
+            std::string text;
+            for (auto& element : current_elements)
+                text += element + " ";
+            std::cout << text << "\n";
+        }
 
         last_btn_state = button_state;
         last_cb_state = checkbox_state;
         old_element = frost_ui.find_element("dropID1")->get_selected_item();
+        old_elements = frost_ui.find_element("comboID1")->get_selected_items();
 
         frost_ui.run();
 

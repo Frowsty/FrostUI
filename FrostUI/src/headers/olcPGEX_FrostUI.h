@@ -75,6 +75,10 @@ struct FUI_Colors
     olc::Pixel dropdown_normal = olc::GREY;
     olc::Pixel dropdown_hover = { 150, 150, 150 };
     olc::Pixel dropdown_active = { 100, 100, 100 };
+    // combolist colors
+    olc::Pixel combolist_normal = olc::GREY;
+    olc::Pixel combolist_hover = { 150, 150, 150 };
+    olc::Pixel combolist_active = { 100, 100, 100 };
 };
 
 FUI_Colors color_scheme;
@@ -84,7 +88,8 @@ enum class FUI_Type
     BUTTON = 0,
     LABEL,
     CHECKBOX,
-    DROPDOWN
+    DROPDOWN,
+    COMBOLIST
 };
 
 olc::vf2d auto_scaling(olc::vf2d text_size, olc::vf2d text_scale, olc::vf2d element_size)
@@ -93,7 +98,10 @@ olc::vf2d auto_scaling(olc::vf2d text_size, olc::vf2d text_scale, olc::vf2d elem
     {
         text_scale.y += 0.001;
     }
-    std::cout << text_scale.y << '\n';
+    while ((text_size.x * text_scale.x) < element_size.x)
+    {
+        text_scale.x += 0.001;
+    }
     return text_scale;
 }
 
@@ -297,17 +305,18 @@ void FUI_Window::input(std::deque<FUI_Window*> windows)
     }
 }
 
-/*
-####################################################
-################FUI_ELEMENT START###################
-####################################################
-*/
 enum class DropdownState
 {
     NONE = 0,
     HOVER,
     ACTIVE
 };
+
+/*
+####################################################
+################FUI_ELEMENT START###################
+####################################################
+*/
 
 class FUI_Element
 {
@@ -329,6 +338,8 @@ public:
 
     std::vector<std::pair<DropdownState, std::pair<olc::vf2d, std::string>>> elements;
     std::pair<olc::vf2d, std::string> selected_element;
+    std::vector<std::pair<olc::vf2d, std::string>> selected_elements;
+    std::vector<std::string> return_selected_items;
     float animation_speed = 150.0f;
 
     olc::Pixel text_color = olc::WHITE;
@@ -366,11 +377,24 @@ public:
 
     void make_toggleable(bool* state) { if (ui_type == FUI_Type::BUTTON) toggle_button_state = state; else std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n"; }
 
-    void add_item(olc::vf2d scale, const std::string& item) { if (ui_type == FUI_Type::DROPDOWN)  elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item))); else std::cout << "Trying to add_item to wrong UI_TYPE\n"; }
+    void add_item(olc::vf2d scale, const std::string& item) { if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)  elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item))); else std::cout << "Trying to add_item to wrong UI_TYPE\n"; }
     
-    void set_animation_speed(float speed) { if (ui_type == FUI_Type::DROPDOWN) animation_speed = speed; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
+    void set_animation_speed(float speed) { if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST) animation_speed = speed; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
 
     std::string get_selected_item() { if (ui_type == FUI_Type::DROPDOWN) return selected_element.second; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
+
+    std::vector<std::string> get_selected_items()
+    {
+        if (ui_type == FUI_Type::COMBOLIST)
+        {
+            return_selected_items.clear();
+            for (auto& item : selected_elements)
+                return_selected_items.push_back(item.second);
+
+            return return_selected_items;
+        }
+        else std::cout << "Trying to retrieve selected items on wrong UI_TYPE\n";
+    }
 };
 
 /*
@@ -809,7 +833,7 @@ void FUI_Dropdown::draw(olc::PixelGameEngine* pge)
         if (active_size.y <= 0)
             active_size.y = 0;
     }
-    
+
     // title position
     olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x - (pge->GetTextSizeProp(text).x * text_scale.x),
         adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
@@ -837,7 +861,7 @@ void FUI_Dropdown::draw(olc::PixelGameEngine* pge)
     int i = 1;
     for (auto& element : elements)
     {
-        if (active_size.y == size.y * elements.size())
+        if (active_size.y >= size.y * i)
         {
             switch (element.first)
             {
@@ -852,7 +876,7 @@ void FUI_Dropdown::draw(olc::PixelGameEngine* pge)
         text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(element.second.second).x * element.second.first.x) / 2),
             adaptive_position.y + position.y + size.y + (size.y * i) - (size.y / 2) - ((pge->GetTextSizeProp(element.second.second).y * element.second.first.y) / 2));
         if (adaptive_position.y + position.y + size.y + active_size.y > text_position.y + (pge->GetTextSizeProp(element.second.second).y + element.second.first.y))
-            pge->DrawStringPropDecal(text_position, element.second.second, olc::BLACK, element.second.first);
+            pge->DrawStringPropDecal(text_position, element.second.second, text_color, element.second.first);
         i++;
     }
 }
@@ -910,6 +934,223 @@ void FUI_Dropdown::input(olc::PixelGameEngine* pge)
             i++;
         }
     }
+}
+
+/*
+####################################################
+################FUI_COMBOLIST START#################
+####################################################
+*/
+class FUI_Combolist : public FUI_Element
+{
+private:
+    olc::vf2d active_size = olc::vf2d(0, 0);
+    DropdownState state = DropdownState::NONE;
+    bool is_open = false;
+public:
+    FUI_Combolist(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Combolist(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Combolist(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Combolist(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void draw(olc::PixelGameEngine* pge) override;
+
+    void input(olc::PixelGameEngine* pge) override;
+};
+
+FUI_Combolist::FUI_Combolist(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    ui_type = FUI_Type::COMBOLIST;
+}
+
+FUI_Combolist::FUI_Combolist(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    ui_type = FUI_Type::COMBOLIST;
+}
+
+FUI_Combolist::FUI_Combolist(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::COMBOLIST;
+}
+
+FUI_Combolist::FUI_Combolist(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::COMBOLIST;
+}
+
+void FUI_Combolist::draw(olc::PixelGameEngine* pge)
+{
+    // Adapt positioning depending on if there's a parent to the element or not
+    if (parent)
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+    else
+        adaptive_position = olc::vi2d(0, 0);
+
+    if (is_open)
+    {
+        float future_y = size.y * elements.size();
+        active_size.y += animation_speed * pge->GetElapsedTime();
+        if (active_size.y >= future_y)
+            active_size.y = future_y;
+    }
+    else
+    {
+        active_size.y -= animation_speed * pge->GetElapsedTime();
+        if (active_size.y <= 0)
+            active_size.y = 0;
+    }
+    
+    // title position
+    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x - (pge->GetTextSizeProp(text).x * text_scale.x),
+        adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
+    pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
+
+    switch (state)
+    {
+    case DropdownState::NONE:
+        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_normal);
+        break;
+    case DropdownState::HOVER:
+        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_hover);
+        break;
+    }
+    if (active_size.y != size.y * elements.size())
+        pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
+
+    if (selected_elements.size() > 1)
+    {
+        std::string temp_text = selected_elements[0].second + ", ...";
+        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(temp_text).x * selected_elements[0].first.x) / 2),
+            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(temp_text).y * selected_elements[0].first.y) / 2));
+        pge->DrawStringPropDecal(text_position, temp_text, text_color, selected_elements[0].first);
+    }
+    else if (selected_elements.size() > 0)
+    {
+        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(selected_elements[0].second).x * selected_elements[0].first.x) / 2),
+            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(selected_elements[0].second).y * selected_elements[0].first.y) / 2));
+        pge->DrawStringPropDecal(text_position, selected_elements[0].second, text_color, selected_elements[0].first);
+    }
+
+    int i = 1;
+    for (auto& element : elements)
+    {
+        if (active_size.y >= size.y * i)
+        {
+            switch (element.first)
+            {
+            case DropdownState::NONE:
+                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
+                break;
+            case DropdownState::HOVER:
+                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
+                break;
+            case DropdownState::ACTIVE:
+                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
+                break;
+            }
+        }
+        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(element.second.second).x * element.second.first.x) / 2),
+            adaptive_position.y + position.y + size.y + (size.y * i) - (size.y / 2) - ((pge->GetTextSizeProp(element.second.second).y * element.second.first.y) / 2));
+        if (adaptive_position.y + position.y + size.y + active_size.y > text_position.y + (pge->GetTextSizeProp(element.second.second).y + element.second.first.y))
+            pge->DrawStringPropDecal(text_position, element.second.second, text_color, element.second.first);
+        i++;
+    }
+}
+
+void FUI_Combolist::input(olc::PixelGameEngine* pge)
+{
+    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+        pge->GetMousePos().y >= adaptive_position.y + position.y &&
+        pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
+    {
+        if (pge->GetMouse(0).bPressed)
+        {
+            if (is_open)
+                is_open = false;
+            else
+                is_open = true;
+        }
+        else
+            state = DropdownState::HOVER;
+    }
+    else
+        state = DropdownState::NONE;
+
+
+    if (is_open)
+    {
+        int i = 1;
+        for (auto& element : elements)
+        {
+            if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                pge->GetMousePos().y >= adaptive_position.y + position.y + (size.y * i) &&
+                pge->GetMousePos().y <= adaptive_position.y + position.y + (size.y * i) + size.y)
+            {
+                if (pge->GetMouse(0).bPressed)
+                {
+                    bool did_find_element = false;
+                    for (auto& sel_element : selected_elements)
+                    {
+                        if (sel_element.second == element.second.second)
+                        {
+                            did_find_element = true;
+                            int j = 0;
+                            for (auto& el : selected_elements)
+                            {
+                                if (el.second == element.second.second)
+                                {
+                                    element.first = DropdownState::NONE;
+                                    selected_elements.erase(selected_elements.begin() + j);
+                                    break;
+                                }
+                                j++;
+                            }
+                            break;
+                        }
+                    }
+                    if (!did_find_element)
+                    {
+                        element.first = DropdownState::ACTIVE;
+                        selected_elements.push_back(std::make_pair(element.second.first, element.second.second));
+                    }
+                }
+                else if (element.first != DropdownState::ACTIVE)
+                    element.first = DropdownState::HOVER;
+            }
+            else if (element.first != DropdownState::ACTIVE)
+                element.first = DropdownState::NONE;
+            i++;
+        }
+    }
+    
+    if (!(pge->GetMousePos().x >= adaptive_position.x + position.x &&
+        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+        pge->GetMousePos().y >= adaptive_position.y + position.y &&
+        pge->GetMousePos().y <= adaptive_position.y + position.y + size.y + active_size.y) && pge->GetMouse(0).bPressed)
+        is_open = false;
+        
 }
 /*
 ####################################################
@@ -1029,6 +1270,10 @@ public:
     void add_dropdown(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
     void add_dropdown(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void add_combolist(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void add_combolist(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
     void add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
 
@@ -1224,6 +1469,56 @@ void olcPGEX_FrostUI::add_dropdown(const std::string& identifier, const std::str
     else
         std::cout << "Duplicate IDs found (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
 }
+
+void olcPGEX_FrostUI::add_combolist(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (windows.size() > 0)
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, text, position, size)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size)));
+                else
+                    std::cout << "Could not find parent window ID (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
+            }
+        }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_combolist(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (!active_window_id.empty())
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, text, position, size)));
+            }
+        }
+        else
+            if (!active_group.empty())
+                elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, active_group, text, position, size)));
+            else
+                elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, text, position, size)));
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
+}
+
 
 void olcPGEX_FrostUI::add_button(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
