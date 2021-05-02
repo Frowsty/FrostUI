@@ -336,6 +336,8 @@ public:
     bool centered = false;
     bool* toggle_button_state = nullptr;
 
+    bool is_focused = false;
+
     std::vector<std::pair<DropdownState, std::pair<olc::vf2d, std::string>>> elements;
     std::pair<olc::vf2d, std::string> selected_element;
     std::vector<std::pair<olc::vf2d, std::string>> selected_elements;
@@ -889,6 +891,9 @@ void FUI_Dropdown::input(olc::PixelGameEngine* pge)
         pge->GetMousePos().y >= adaptive_position.y + position.y &&
         pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
     {
+        if (pge->GetMouse(1).bPressed)
+            selected_element.second.clear();
+
         if (pge->GetMouse(0).bPressed)
         {
             if (is_open)
@@ -934,6 +939,11 @@ void FUI_Dropdown::input(olc::PixelGameEngine* pge)
             i++;
         }
     }
+
+    if (is_open)
+        is_focused = true;
+    else
+        is_focused = false;
 }
 
 /*
@@ -1150,7 +1160,11 @@ void FUI_Combolist::input(olc::PixelGameEngine* pge)
         pge->GetMousePos().y >= adaptive_position.y + position.y &&
         pge->GetMousePos().y <= adaptive_position.y + position.y + size.y + active_size.y) && pge->GetMouse(0).bPressed)
         is_open = false;
-        
+       
+    if (is_open)
+        is_focused = true;
+    else
+        is_focused = false;
 }
 /*
 ####################################################
@@ -1165,6 +1179,7 @@ private:
     std::string active_window_id;
     std::string active_group;
     std::deque<std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> elements;
+    std::pair<bool, std::shared_ptr<FUI_Element>> trigger_pushback = std::make_pair(false, nullptr);
 
     void push_focused_to_back()
     {
@@ -1180,6 +1195,20 @@ private:
             {
                 windows.push_back(window);
                 windows.erase(windows.begin() + i);
+            }
+            i++;
+        }
+    }
+
+    void push_focused_element_to_back()
+    {
+        int i = 0;
+        for (auto& element : elements)
+        {
+            if (element.second->is_focused)
+            {
+                elements.push_back(element);
+                elements.erase(elements.begin() + i);
             }
             i++;
         }
@@ -1591,6 +1620,13 @@ void olcPGEX_FrostUI::run()
     // arrange the deques containing the windows
     push_focused_to_back();
 
+    if (trigger_pushback.first)
+    {
+        push_focused_element_to_back();
+        trigger_pushback.first = false;
+        trigger_pushback.second = nullptr;
+    }
+
     // Draw windows first
     if (windows.size() > 0)
     {
@@ -1621,13 +1657,28 @@ void olcPGEX_FrostUI::run()
                     if (!active_group.empty())
                         if (e.second->get_group() != active_group || e.second->get_group().empty())
                             continue;
+                if (e.second->is_focused)
+                {
+                    trigger_pushback.first = true;
+                    trigger_pushback.second = e.second;
+                }
                 if (e.second->parent)
                 {
                     if (e.second->parent->get_id() == window->get_id())
                     {
                         e.second->draw(pge);
                         if (window->is_focused())
-                            e.second->input(pge);
+                        {
+                            if (trigger_pushback.second)
+                            {
+                                if (trigger_pushback.second->identifier == e.second->identifier)
+                                    e.second->input(pge);
+                            }
+                            else
+                                e.second->input(pge);
+                        }
+                        else
+                            e.second->is_focused = false;
                     }
                     else
                         continue;
@@ -1636,5 +1687,4 @@ void olcPGEX_FrostUI::run()
         }
     }
 }
-
 #endif

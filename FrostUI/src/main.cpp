@@ -53,7 +53,7 @@ public:
         frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f }, "Cool item2");
 
         // dropdown example
-        frost_ui.add_combolist("comboID1", "Select items: ", { 300, 30 }, { 100, 20 });
+        frost_ui.add_combolist("comboID1", "Select items: ", { 110, 70 }, { 100, 20 });
         frost_ui.find_element("comboID1")->set_text_color(olc::BLACK);
         frost_ui.find_element("comboID1")->scale_text({ 1.0f, 1.0f });
         frost_ui.find_element("comboID1")->add_item({ 1.0f, 1.0f }, "Cool item");
