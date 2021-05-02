@@ -45,15 +45,18 @@ public:
 
         frost_ui.set_active_window("new_window");
 
+        frost_ui.add_groupbox("groupbox1", "This is a groupbox", { 5, 10 }, { 210, 80 });
+        auto groupbox_pos = frost_ui.find_groupbox("groupbox1")->get_position();
+
         // dropdown example
-        frost_ui.add_dropdown("dropID1", "Select an item: ", { 100, 30 }, { 100, 20 });
+        frost_ui.add_dropdown("dropID1", "Select an item: ", { groupbox_pos.x + 100, groupbox_pos.y + 10 }, { 100, 20 });
         frost_ui.find_element("dropID1")->set_text_color(olc::BLACK);
         frost_ui.find_element("dropID1")->scale_text({ 1.0f, 1.0f });
         frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f }, "Cool item");
         frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f }, "Cool item2");
 
         // dropdown example
-        frost_ui.add_combolist("comboID1", "Select items: ", { 110, 70 }, { 100, 20 });
+        frost_ui.add_combolist("comboID1", "Select items: ", { groupbox_pos.x + 100, groupbox_pos.y + 50 }, { 100, 20 });
         frost_ui.find_element("comboID1")->set_text_color(olc::BLACK);
         frost_ui.find_element("comboID1")->scale_text({ 1.0f, 1.0f });
         frost_ui.find_element("comboID1")->add_item({ 1.0f, 1.0f }, "Cool item");

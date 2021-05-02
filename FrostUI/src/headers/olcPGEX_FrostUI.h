@@ -79,6 +79,9 @@ struct FUI_Colors
     olc::Pixel combolist_normal = olc::GREY;
     olc::Pixel combolist_hover = { 150, 150, 150 };
     olc::Pixel combolist_active = { 100, 100, 100 };
+    // combolist colors
+    olc::Pixel groupbox_outline = olc::BLACK;
+    olc::Pixel groupbox_background = { 225, 225, 225 };
 };
 
 FUI_Colors color_scheme;
@@ -89,7 +92,8 @@ enum class FUI_Type
     LABEL,
     CHECKBOX,
     DROPDOWN,
-    COMBOLIST
+    COMBOLIST,
+    GROUPBOX
 };
 
 olc::vf2d auto_scaling(olc::vf2d text_size, olc::vf2d text_scale, olc::vf2d element_size)
@@ -397,6 +401,8 @@ public:
         }
         else std::cout << "Trying to retrieve selected items on wrong UI_TYPE\n";
     }
+
+    const olc::vi2d get_position() const { return position; }
 };
 
 /*
@@ -711,7 +717,7 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
     }
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
-    olc::vf2d checkbox_filling = olc::vf2d(size.x / 10, size.y / 10);
+    olc::vf2d checkbox_filling = olc::vf2d(1.0f, 1.0f);
     // Draw the body of the checkbox
     switch (state)
     {
@@ -721,12 +727,12 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
     case State::HOVER:
         *checkbox_state = false;
         pge->FillRectDecal(checkbox_position + checkbox_filling, 
-                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2 }, color_scheme.checkbox_hover);
+                          { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_hover);
         break;
     case State::ACTIVE:
         *checkbox_state = true;
         pge->FillRectDecal(checkbox_position + checkbox_filling,
-                          { static_cast<float>(size.x) - (size.x / 10) * 2, static_cast<float>(size.y) - (size.y / 10) * 2}, color_scheme.checkbox_active);
+                          { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_active);
         break;
     }
 }
@@ -1094,6 +1100,13 @@ void FUI_Combolist::input(olc::PixelGameEngine* pge)
         pge->GetMousePos().y >= adaptive_position.y + position.y &&
         pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
     {
+        if (pge->GetMouse(1).bPressed)
+        {
+            selected_elements.clear();
+            for (auto& element : elements)
+                element.first = DropdownState::NONE;
+        }
+
         if (pge->GetMouse(0).bPressed)
         {
             if (is_open)
@@ -1166,6 +1179,91 @@ void FUI_Combolist::input(olc::PixelGameEngine* pge)
     else
         is_focused = false;
 }
+
+/*
+####################################################
+################FUI_GROUPBOX START##################
+####################################################
+*/
+class FUI_Groupbox : public FUI_Element
+{
+public:
+    FUI_Groupbox(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Groupbox(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Groupbox(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Groupbox(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void draw(olc::PixelGameEngine* pge) override;
+
+    void input(olc::PixelGameEngine* pge) override {};
+};
+
+FUI_Groupbox::FUI_Groupbox(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    ui_type = FUI_Type::GROUPBOX;
+}
+
+FUI_Groupbox::FUI_Groupbox(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    ui_type = FUI_Type::GROUPBOX;
+}
+
+FUI_Groupbox::FUI_Groupbox(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::GROUPBOX;
+}
+
+FUI_Groupbox::FUI_Groupbox(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::GROUPBOX;
+}
+
+void FUI_Groupbox::draw(olc::PixelGameEngine* pge)
+{
+    // Adapt positioning depending on if there's a parent to the element or not
+    if (parent)
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+    else
+        adaptive_position = olc::vi2d(0, 0);
+
+    auto line_position = position + adaptive_position;
+    pge->FillRectDecal(line_position, size, color_scheme.groupbox_background);
+    // top left outline
+    pge->FillRectDecal(line_position, olc::vf2d((size.x / 2) - (pge->GetTextSizeProp(text).x / 2), 1), color_scheme.groupbox_outline);
+    // top right outline
+    pge->FillRectDecal(olc::vf2d(line_position.x + (size.x / 2) + (pge->GetTextSizeProp(text).x / 2), line_position.y), olc::vf2d(size.x - (size.x / 2) - (pge->GetTextSizeProp(text).x / 2), 1), color_scheme.groupbox_outline);
+    // left outline
+    pge->FillRectDecal(line_position, olc::vi2d(1, size.y), color_scheme.groupbox_outline);
+    // right outline
+    pge->FillRectDecal(olc::vi2d(line_position.x + size.x, line_position.y), olc::vi2d(1, size.y), color_scheme.groupbox_outline);
+    // bottom outline
+    pge->FillRectDecal(olc::vi2d(line_position.x, line_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.groupbox_outline);
+
+    auto text_size = pge->GetTextSizeProp(text) * text_scale;
+    pge->DrawStringPropDecal(olc::vf2d(line_position.x + (size.x / 2) - (text_size.x / 2), line_position.y - (text_size.y / 2)), text, olc::BLACK);
+
+}
+
 /*
 ####################################################
 ################FUI_HANDLER START###################
@@ -1179,6 +1277,7 @@ private:
     std::string active_window_id;
     std::string active_group;
     std::deque<std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> elements;
+    std::deque<std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> groupboxes;
     std::pair<bool, std::shared_ptr<FUI_Element>> trigger_pushback = std::make_pair(false, nullptr);
 
     void push_focused_to_back()
@@ -1304,6 +1403,10 @@ public:
 
     void add_combolist(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
+    void add_groupbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void add_groupbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
     void add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
 
     void add_label(const std::string& identifier, const std::string& text, olc::vi2d position);
@@ -1320,6 +1423,8 @@ public:
     }
 
     std::shared_ptr<FUI_Element> find_element(const std::string& identifier);
+
+    std::shared_ptr<FUI_Element> find_groupbox(const std::string& identifier);
 
     void remove_element(const std::string& identifier);
 
@@ -1345,6 +1450,16 @@ void olcPGEX_FrostUI::remove_element(const std::string& id)
 std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(const std::string& id)
 {
     for (auto& element : elements)
+    {
+        if (element.second->identifier == id)
+            return element.second;
+    }
+    return nullptr;
+}
+
+std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_groupbox(const std::string& id)
+{
+    for (auto& element : groupboxes)
     {
         if (element.second->identifier == id)
             return element.second;
@@ -1548,6 +1663,55 @@ void olcPGEX_FrostUI::add_combolist(const std::string& identifier, const std::st
         std::cout << "Duplicate IDs found (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
 }
 
+void olcPGEX_FrostUI::add_groupbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (windows.size() > 0)
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, text, position, size)));
+                    else
+                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size)));
+                else
+                    std::cout << "Could not find parent window ID (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
+            }
+        }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_groupbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (!active_window_id.empty())
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size)));
+                    else
+                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, text, position, size)));
+            }
+        }
+        else
+            if (!active_group.empty())
+                groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, active_group, text, position, size)));
+            else
+                groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, text, position, size)));
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
+}
+
 
 void olcPGEX_FrostUI::add_button(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
@@ -1601,6 +1765,18 @@ void olcPGEX_FrostUI::add_button(const std::string& identifier, const std::strin
 void olcPGEX_FrostUI::run()
 {
     // Draw standalone elements first (standalone elements are elements without a parent / window)
+
+    for (auto& g : groupboxes)
+    {
+        if (!g.second)
+            continue;
+        if (!g.second->get_group().empty())
+            if (!active_group.empty())
+                if (g.second->get_group() != active_group || g.second->get_group().empty())
+                    continue;
+        if (!g.second->parent)
+            g.second->draw(pge);
+    }
     
     for (auto& e : elements)
     {
@@ -1647,6 +1823,17 @@ void olcPGEX_FrostUI::run()
             }
             
             window->draw();
+            for (auto& g : groupboxes)
+            {
+                if (!g.second)
+                    continue;
+                if (!g.second->get_group().empty())
+                    if (!active_group.empty())
+                        if (g.second->get_group() != active_group || g.second->get_group().empty())
+                            continue;
+                if (g.second->parent && g.second->parent->get_id() == window->get_id())
+                    g.second->draw(pge);
+            }
 
             // first = FUI_Type, second = FUI_Element
             for (auto& e : elements)
