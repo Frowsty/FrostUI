@@ -70,6 +70,11 @@ public:
         frost_ui.find_element("slider1")->set_text_color(olc::BLACK);
         frost_ui.find_element("slider1")->set_slider_value(22.5f);
 
+        frost_ui.set_active_window("new_window2");
+        
+        frost_ui.add_inputfield("input1", "Testing", { 10, 10 }, { 100, 10 });
+        frost_ui.find_element("input1")->set_text_color(olc::BLACK);
+
         // Set the active window (window that will be used to add elements)
         frost_ui.set_active_window("main_window");
 

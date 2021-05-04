@@ -85,6 +85,9 @@ struct FUI_Colors
     olc::Pixel slider_outline = olc::BLACK;
     olc::Pixel slider_normal = { 150, 150, 150 };
     olc::Pixel slider_hover = { 100, 100, 100 };
+    // inputfield colors
+    olc::Pixel inputfield_outline = olc::BLACK;
+    olc::Pixel inputfield_background = { 150, 150, 150 };
 };
 
 FUI_Colors color_scheme;
@@ -97,7 +100,8 @@ enum class FUI_Type
     DROPDOWN,
     COMBOLIST,
     GROUPBOX,
-    SLIDER
+    SLIDER,
+    INPUTFIELD
 };
 
 std::string to_string_with_precision(const float a_value, const int n = 6)
@@ -355,6 +359,8 @@ public:
     int checkbox_padding = 5;
     bool centered = false;
     bool* toggle_button_state = nullptr;
+
+    std::string inputfield_text = "";
 
     bool is_focused = false;
 
@@ -1431,6 +1437,222 @@ void FUI_Slider::input(olc::PixelGameEngine* pge)
     }
 }
 
+
+/*
+####################################################
+################FUI_TEXTFIELD START#################
+####################################################
+*/
+// Credits to Megarev#2866 on discord for keyboard input related code
+enum class TextKey {
+    None = -1,
+    A = 0, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
+    LBracket, RBracket, Semicolon, Comma, Period, Quote, ForwardSlash, BackwardSlash,
+    Tilda, Equal, Hyphen, Space
+};
+
+int text_keys = 48;
+
+class FUI_Inputfield : public FUI_Element
+{
+private:
+    enum class State
+    {
+        NONE = 0,
+        ACTIVE
+    };
+    State state = State::NONE;
+    std::string text_noshift = "abcdefghijklmnopqrstuvwxyz0123456789[];,.'/\\`=- ";
+    std::string text_shift = "ABCDEFGHIJKLMNOPQRSTUVWXYZ)!@#$%^&*({}:<>\"?|~+_ ";
+
+    bool is_textkey_pressed(olc::PixelGameEngine* pge, const TextKey& key);
+
+    int get_char_id(olc::PixelGameEngine* pge);
+
+    std::string get_char_from_id(olc::PixelGameEngine* pge);
+
+public:
+    FUI_Inputfield(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Inputfield(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Inputfield(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+    FUI_Inputfield(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void draw(olc::PixelGameEngine* pge) override;
+
+    void input(olc::PixelGameEngine* pge) override;
+};
+
+FUI_Inputfield::FUI_Inputfield(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    ui_type = FUI_Type::INPUTFIELD;
+}
+
+FUI_Inputfield::FUI_Inputfield(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    ui_type = FUI_Type::INPUTFIELD;
+}
+
+FUI_Inputfield::FUI_Inputfield(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::INPUTFIELD;
+}
+
+FUI_Inputfield::FUI_Inputfield(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    group = g;
+    ui_type = FUI_Type::INPUTFIELD;
+}
+
+bool FUI_Inputfield::is_textkey_pressed(olc::PixelGameEngine* pge, const TextKey& key)
+{
+    int vTextKey = 0;
+    switch (key)
+    {
+    default:                        vTextKey = olc::NONE;        break;
+    case TextKey::A:                vTextKey = olc::A;           break;
+    case TextKey::B:                vTextKey = olc::B;           break;
+    case TextKey::C:                vTextKey = olc::C;           break;
+    case TextKey::D:                vTextKey = olc::D;           break;
+    case TextKey::E:                vTextKey = olc::E;           break;
+    case TextKey::F:                vTextKey = olc::F;           break;
+    case TextKey::G:                vTextKey = olc::G;           break;
+    case TextKey::H:                vTextKey = olc::H;           break;
+    case TextKey::I:                vTextKey = olc::I;           break;
+    case TextKey::J:                vTextKey = olc::J;           break;
+    case TextKey::K:                vTextKey = olc::K;           break;
+    case TextKey::L:                vTextKey = olc::L;           break;
+    case TextKey::M:                vTextKey = olc::M;           break;
+    case TextKey::N:                vTextKey = olc::N;           break;
+    case TextKey::O:                vTextKey = olc::O;           break;
+    case TextKey::P:                vTextKey = olc::P;           break;
+    case TextKey::Q:                vTextKey = olc::Q;           break;
+    case TextKey::R:                vTextKey = olc::R;           break;
+    case TextKey::S:                vTextKey = olc::S;           break;
+    case TextKey::T:                vTextKey = olc::T;           break;
+    case TextKey::U:                vTextKey = olc::U;           break;
+    case TextKey::V:                vTextKey = olc::V;           break;
+    case TextKey::W:                vTextKey = olc::W;           break;
+    case TextKey::X:                vTextKey = olc::X;           break;
+    case TextKey::Y:                vTextKey = olc::Y;           break;
+    case TextKey::Z:                vTextKey = olc::Z;           break;
+    case TextKey::Num0:             vTextKey = olc::K0;          break;
+    case TextKey::Num1:             vTextKey = olc::K1;          break;
+    case TextKey::Num2:             vTextKey = olc::K2;          break;
+    case TextKey::Num3:             vTextKey = olc::K3;          break;
+    case TextKey::Num4:             vTextKey = olc::K4;          break;
+    case TextKey::Num5:             vTextKey = olc::K5;          break;
+    case TextKey::Num6:             vTextKey = olc::K6;          break;
+    case TextKey::Num7:             vTextKey = olc::K7;          break;
+    case TextKey::Num8:             vTextKey = olc::K8;          break;
+    case TextKey::Num9:             vTextKey = olc::K9;          break;
+
+    case TextKey::LBracket:         vTextKey = olc::OEM_4;       break;
+    case TextKey::RBracket:         vTextKey = olc::OEM_6;       break;
+    case TextKey::Semicolon:        vTextKey = olc::OEM_1;       break;
+    case TextKey::Comma:            vTextKey = olc::COMMA;       break;
+    case TextKey::Period:           vTextKey = olc::PERIOD;      break;
+    case TextKey::Quote:            vTextKey = olc::OEM_7;       break;
+    case TextKey::ForwardSlash:     vTextKey = olc::OEM_2;       break;
+    case TextKey::BackwardSlash:    vTextKey = olc::OEM_5;       break;
+    case TextKey::Tilda:            vTextKey = olc::OEM_3;       break;
+    case TextKey::Equal:            vTextKey = olc::EQUALS;      break;
+    case TextKey::Hyphen:           vTextKey = olc::MINUS;       break;
+
+    case TextKey::Space:            vTextKey = olc::SPACE;       break;
+    }
+
+    return pge->GetKey((olc::Key)vTextKey).bPressed;
+}
+
+int FUI_Inputfield::get_char_id(olc::PixelGameEngine* pge)
+{
+    for (int i = 0; i < text_keys; i++) {
+        if (is_textkey_pressed(pge, (TextKey)i)) {
+            return i;
+        }
+    }
+    return (int)TextKey::None;
+}
+
+std::string FUI_Inputfield::get_char_from_id(olc::PixelGameEngine* pge)
+{
+    int index = get_char_id(pge);
+    if (index == (int)TextKey::None) return "";
+
+    if (pge->GetKey(olc::SHIFT).bHeld) {
+        return std::string(1, text_shift[index]);
+    }
+
+    return std::string(1, text_noshift[index]);
+}
+
+void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
+{
+    // Adapt positioning depending on if there's a parent to the element or not
+    if (parent)
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+    else
+        adaptive_position = olc::vi2d(0, 0);
+
+    auto absolute_position = adaptive_position + position;
+
+    // background
+    pge->FillRect(absolute_position, size, color_scheme.inputfield_background);
+    // top left outline
+    pge->FillRectDecal(absolute_position, olc::vf2d(size.x, 1), color_scheme.inputfield_outline);
+    // left outline
+    pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.inputfield_outline);
+    // right outline
+    pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x, absolute_position.y), olc::vi2d(1, size.y), color_scheme.inputfield_outline);
+    // bottom outline
+    pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.inputfield_outline);
+
+    // render the text
+    auto text_position = olc::vf2d(absolute_position.x, absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(inputfield_text).y * text_scale.y) / 2));
+    pge->DrawStringPropDecal(text_position, inputfield_text, text_color);
+}
+
+void FUI_Inputfield::input(olc::PixelGameEngine* pge)
+{
+    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+        pge->GetMousePos().y >= adaptive_position.y + position.y &&
+        pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
+    {
+        if (pge->GetMouse(0).bPressed)
+            state = State::ACTIVE;
+    }
+    else if (pge->GetMouse(0).bPressed && state == State::ACTIVE)
+        state = State::NONE;
+
+    if (state == State::ACTIVE)
+    {
+        if (pge->GetKey(olc::BACK).bPressed)
+            inputfield_text.pop_back();
+        inputfield_text += get_char_from_id(pge);
+    }
+}
+
 /*
 ####################################################
 ################FUI_HANDLER START###################
@@ -1443,8 +1665,8 @@ private:
     std::vector<std::string> groups;
     std::string active_window_id;
     std::string active_group;
-    std::deque<std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> elements;
-    std::deque<std::pair<FUI_Type, std::shared_ptr<FUI_Element>>> groupboxes;
+    std::deque<std::shared_ptr<FUI_Element>> elements;
+    std::deque<std::shared_ptr<FUI_Element>> groupboxes;
     std::pair<bool, std::shared_ptr<FUI_Element>> trigger_pushback = std::make_pair(false, nullptr);
 
     void push_focused_to_back()
@@ -1471,7 +1693,7 @@ private:
         int i = 0;
         for (auto& element : elements)
         {
-            if (element.second->is_focused)
+            if (element->is_focused)
             {
                 elements.push_back(element);
                 elements.erase(elements.begin() + i);
@@ -1582,6 +1804,10 @@ public:
 
     void add_label(const std::string& identifier, const std::string& text, olc::vi2d position);
 
+    void add_inputfield(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void add_inputfield(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
     FUI_Window* find_window(const std::string& identifier)
     {
         for (auto& window : windows)
@@ -1609,7 +1835,7 @@ void olcPGEX_FrostUI::remove_element(const std::string& id)
     int i = 0;
     for (auto& element : elements)
     {
-        if (element.second->identifier == id)
+        if (element->identifier == id)
         {
             elements.erase(elements.begin() + i);
             break;
@@ -1622,8 +1848,8 @@ std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(const std::string& id
 {
     for (auto& element : elements)
     {
-        if (element.second->identifier == id)
-            return element.second;
+        if (element->identifier == id)
+            return element;
     }
     return nullptr;
 }
@@ -1632,8 +1858,8 @@ std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_groupbox(const std::string& i
 {
     for (auto& element : groupboxes)
     {
-        if (element.second->identifier == id)
-            return element.second;
+        if (element->identifier == id)
+            return element;
     }
     return nullptr;
 }
@@ -1648,9 +1874,9 @@ void olcPGEX_FrostUI::add_label(const std::string& parent_id, const std::string&
             {
                 if (window->get_id() == parent_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, text, position)));
+                        elements.push_back(std::make_shared<FUI_Label>(identifier, window, text, position));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, active_group, text, position)));
+                        elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group, text, position));
                 else
                     std::cout << "Could not find parent window ID (function affected: add_label, label_id affected: " + identifier + ")\n";
             }
@@ -1672,16 +1898,16 @@ void olcPGEX_FrostUI::add_label(const std::string& identifier, const std::string
             {
                 if (window->get_id() == active_window_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, active_group, text, position)));
+                        elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group, text, position));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, window, text, position)));
+                        elements.push_back(std::make_shared<FUI_Label>(identifier, window, text, position));
             }
         }
         else
             if (!active_group.empty())
-                elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, active_group, text, position)));
+                elements.push_back(std::make_shared<FUI_Label>(identifier, active_group, text, position));
             else
-                elements.push_back(std::make_pair(FUI_Type::LABEL, std::make_shared<FUI_Label>(identifier, text, position)));
+                elements.push_back(std::make_shared<FUI_Label>(identifier, text, position));
     }
     else
         std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
@@ -1697,9 +1923,9 @@ void olcPGEX_FrostUI::add_checkbox(const std::string& parent_id, const std::stri
             {
                 if (window->get_id() == parent_id)
                     if (!active_group.empty())
-                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state)));
+                        elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
                     else
-                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state)));
+                        elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state));
                 else
                     std::cout << "Could not find parent window ID (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
             }
@@ -1721,16 +1947,16 @@ void olcPGEX_FrostUI::add_checkbox(const std::string& identifier, const std::str
             {
                 if (window->get_id() == active_window_id)
                     if (!active_group.empty())
-                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state)));
+                        elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state));
                     else
-                        elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state)));
+                        elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
             }
         }
         else
             if (!active_group.empty())
-                elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, active_group, text, position, size, cb_state)));
+                elements.push_front(std::make_shared<FUI_Checkbox>(identifier, active_group, text, position, size, cb_state));
             else
-                elements.push_front(std::make_pair(FUI_Type::CHECKBOX, std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state)));
+                elements.push_front(std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state));
     }
     else
         std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
@@ -1746,9 +1972,9 @@ void olcPGEX_FrostUI::add_dropdown(const std::string& parent_id, const std::stri
             {
                 if (window->get_id() == parent_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size));
                 else
                     std::cout << "Could not find parent window ID (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
             }
@@ -1770,16 +1996,16 @@ void olcPGEX_FrostUI::add_dropdown(const std::string& identifier, const std::str
             {
                 if (window->get_id() == active_window_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, window, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
             }
         }
         else
             if (!active_group.empty())
-                elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, active_group, text, position, size)));
+                elements.push_back(std::make_shared<FUI_Dropdown>(identifier, active_group, text, position, size));
             else
-                elements.push_back(std::make_pair(FUI_Type::DROPDOWN, std::make_shared<FUI_Dropdown>(identifier, text, position, size)));
+                elements.push_back(std::make_shared<FUI_Dropdown>(identifier, text, position, size));
     }
     else
         std::cout << "Duplicate IDs found (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
@@ -1795,9 +2021,9 @@ void olcPGEX_FrostUI::add_combolist(const std::string& parent_id, const std::str
             {
                 if (window->get_id() == parent_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size));
                 else
                     std::cout << "Could not find parent window ID (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
             }
@@ -1819,16 +2045,16 @@ void olcPGEX_FrostUI::add_combolist(const std::string& identifier, const std::st
             {
                 if (window->get_id() == active_window_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, window, text, position, size)));
+                        elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
             }
         }
         else
             if (!active_group.empty())
-                elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, active_group, text, position, size)));
+                elements.push_back(std::make_shared<FUI_Combolist>(identifier, active_group, text, position, size));
             else
-                elements.push_back(std::make_pair(FUI_Type::COMBOLIST, std::make_shared<FUI_Combolist>(identifier, text, position, size)));
+                elements.push_back(std::make_shared<FUI_Combolist>(identifier, text, position, size));
     }
     else
         std::cout << "Duplicate IDs found (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
@@ -1844,9 +2070,9 @@ void olcPGEX_FrostUI::add_groupbox(const std::string& parent_id, const std::stri
             {
                 if (window->get_id() == parent_id)
                     if (!active_group.empty())
-                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, text, position, size)));
+                        groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
                     else
-                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size)));
+                        groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size));
                 else
                     std::cout << "Could not find parent window ID (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
             }
@@ -1868,16 +2094,16 @@ void olcPGEX_FrostUI::add_groupbox(const std::string& identifier, const std::str
             {
                 if (window->get_id() == active_window_id)
                     if (!active_group.empty())
-                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size)));
+                        groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size));
                     else
-                        groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, window, text, position, size)));
+                        groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
             }
         }
         else
             if (!active_group.empty())
-                groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, active_group, text, position, size)));
+                groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, active_group, text, position, size));
             else
-                groupboxes.push_back(std::make_pair(FUI_Type::GROUPBOX, std::make_shared<FUI_Groupbox>(identifier, text, position, size)));
+                groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, text, position, size));
     }
     else
         std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
@@ -1893,9 +2119,9 @@ void olcPGEX_FrostUI::add_slider(const std::string& parent_id, const std::string
             {
                 if (window->get_id() == parent_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder)));
+                        elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder)));
+                        elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder));
                 else
                     std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
             }
@@ -1917,16 +2143,16 @@ void olcPGEX_FrostUI::add_slider(const std::string& identifier, const std::strin
             {
                 if (window->get_id() == active_window_id)
                     if (!active_group.empty())
-                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder)));
+                        elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder));
                     else
-                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder)));
+                        elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
             }
         }
         else
             if (!active_group.empty())
-                elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, active_group, text, position, size, range, value_holder)));
+                elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group, text, position, size, range, value_holder));
             else
-                elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder)));
+                elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder));
     }
     else
         std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
@@ -1942,9 +2168,9 @@ void olcPGEX_FrostUI::add_button(const std::string& parent_id, const std::string
             {
                 if (window->get_id() == parent_id)
                     if (!active_group.empty())
-                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+                        elements.push_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                     else
-                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
+                        elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback));
                 else
                     std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
             }
@@ -1966,19 +2192,68 @@ void olcPGEX_FrostUI::add_button(const std::string& identifier, const std::strin
             {
                 if (window->get_id() == active_window_id)
                     if (!active_group.empty())
-                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback)));
+                        elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback));
                     else
-                        elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, window, text, position, size, callback)));
+                        elements.push_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
             }
         }
         else
             if (!active_group.empty())
-                elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, active_group, text, position, size, callback)));
+                elements.push_front(std::make_shared<FUI_Button>(identifier, active_group, text, position, size, callback));
             else
-                elements.push_front(std::make_pair(FUI_Type::BUTTON, std::make_shared<FUI_Button>(identifier, text, position, size, callback)));
+                elements.push_front(std::make_shared<FUI_Button>(identifier, text, position, size, callback));
     }
     else
         std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_inputfield(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (windows.size() > 0)
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
+                    else
+                        elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group, text, position, size));
+                else
+                    std::cout << "Could not find parent window ID (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
+            }
+        }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_inputfield(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+{
+    if (!find_element(identifier))
+    {
+        if (!active_window_id.empty())
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group, text, position, size));
+                    else
+                        elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
+            }
+        }
+        else
+            if (!active_group.empty())
+                elements.push_back(std::make_shared<FUI_Inputfield>(identifier, active_group, text, position, size));
+            else
+                elements.push_back(std::make_shared<FUI_Inputfield>(identifier, text, position, size));
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
 }
 
 void olcPGEX_FrostUI::run()
@@ -1987,28 +2262,28 @@ void olcPGEX_FrostUI::run()
 
     for (auto& g : groupboxes)
     {
-        if (!g.second)
+        if (!g)
             continue;
-        if (!g.second->get_group().empty())
+        if (!g->get_group().empty())
             if (!active_group.empty())
-                if (g.second->get_group() != active_group || g.second->get_group().empty())
+                if (g->get_group() != active_group || g->get_group().empty())
                     continue;
-        if (!g.second->parent)
-            g.second->draw(pge);
+        if (!g->parent)
+            g->draw(pge);
     }
     
     for (auto& e : elements)
     {
-        if (!e.second)
+        if (!e)
             continue;
-        if (!e.second->get_group().empty())
+        if (!e->get_group().empty())
             if (!active_group.empty())
-                if (e.second->get_group() != active_group || e.second->get_group().empty())
+                if (e->get_group() != active_group || e->get_group().empty())
                     continue;
-        if (!e.second->parent)
+        if (!e->parent)
         {
-            e.second->draw(pge);
-            e.second->input(pge);
+            e->draw(pge);
+            e->input(pge);
         }
     }
     
@@ -2044,47 +2319,47 @@ void olcPGEX_FrostUI::run()
             window->draw();
             for (auto& g : groupboxes)
             {
-                if (!g.second)
+                if (!g)
                     continue;
-                if (!g.second->get_group().empty())
+                if (!g->get_group().empty())
                     if (!active_group.empty())
-                        if (g.second->get_group() != active_group || g.second->get_group().empty())
+                        if (g->get_group() != active_group || g->get_group().empty())
                             continue;
-                if (g.second->parent && g.second->parent->get_id() == window->get_id())
-                    g.second->draw(pge);
+                if (g->parent && g->parent->get_id() == window->get_id())
+                    g->draw(pge);
             }
 
             // first = FUI_Type, second = FUI_Element
             for (auto& e : elements)
             {
-                if (!e.second)
+                if (!e)
                     continue;
-                if (!e.second->get_group().empty())
+                if (!e->get_group().empty())
                     if (!active_group.empty())
-                        if (e.second->get_group() != active_group || e.second->get_group().empty())
+                        if (e->get_group() != active_group || e->get_group().empty())
                             continue;
-                if (e.second->is_focused)
+                if (e->is_focused)
                 {
                     trigger_pushback.first = true;
-                    trigger_pushback.second = e.second;
+                    trigger_pushback.second = e;
                 }
-                if (e.second->parent)
+                if (e->parent)
                 {
-                    if (e.second->parent->get_id() == window->get_id())
+                    if (e->parent->get_id() == window->get_id())
                     {
-                        e.second->draw(pge);
+                        e->draw(pge);
                         if (window->is_focused())
                         {
                             if (trigger_pushback.second)
                             {
-                                if (trigger_pushback.second->identifier == e.second->identifier)
-                                    e.second->input(pge);
+                                if (trigger_pushback.second->identifier == e->identifier)
+                                    e->input(pge);
                             }
                             else
-                                e.second->input(pge);
+                                e->input(pge);
                         }
                         else
-                            e.second->is_focused = false;
+                            e->is_focused = false;
                     }
                     else
                         continue;
