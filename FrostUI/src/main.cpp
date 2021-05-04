@@ -72,8 +72,10 @@ public:
 
         frost_ui.set_active_window("new_window2");
         
-        frost_ui.add_inputfield("input1", "Testing", { 10, 10 }, { 100, 10 });
+        frost_ui.add_inputfield("input1", "Testing: ", { 55, 10 }, { 100, 20 });
         frost_ui.find_element("input1")->set_text_color(olc::BLACK);
+        frost_ui.find_element("input1")->scale_text({ 1.0f, 2.0f });
+
 
         // Set the active window (window that will be used to add elements)
         frost_ui.set_active_window("main_window");
@@ -99,6 +101,7 @@ public:
         frost_ui.add_button("id1", "Test Button", { 5, 25 }, { 100, 20 }, [&]
             {
                 i++;
+                std::cout << frost_ui.find_element("input1")->get_inputfield_value() << '\n';
                 auto temp = frost_ui.find_element("id1");
                 temp->set_size({ 200, 20 });
                 temp->set_text("Clicked " + std::to_string(i) + " Times");

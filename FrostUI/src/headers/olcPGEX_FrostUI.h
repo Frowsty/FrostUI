@@ -48,6 +48,8 @@
     Author
     ~~~~~~
     Daniel aka Frosty
+
+    Credits to Megarev#2866 on discord for keyboard input related code (https://github.com/Megarev/olcPGEX_TextEnterer)
 */
 #ifndef OLC_PGEX_FROSTUI
 #define OLC_PGEX_FROSTUI
@@ -88,6 +90,8 @@ struct FUI_Colors
     // inputfield colors
     olc::Pixel inputfield_outline = olc::BLACK;
     olc::Pixel inputfield_background = { 150, 150, 150 };
+    olc::Pixel inputfield_select_all_background = { 29, 43, 240, 150 };
+    olc::Pixel inputfield_cursor = olc::BLACK;
 };
 
 FUI_Colors color_scheme;
@@ -429,6 +433,8 @@ public:
     void set_slider_value(float value) { if (ui_type == FUI_Type::SLIDER) slider_value = value; }
 
     const float get_slider_value() const { if (ui_type == FUI_Type::SLIDER) return slider_value; }
+
+    const std::string get_inputfield_value() const { if (ui_type == FUI_Type::INPUTFIELD) return inputfield_text; }
 };
 
 /*
@@ -1465,12 +1471,17 @@ private:
     State state = State::NONE;
     std::string text_noshift = "abcdefghijklmnopqrstuvwxyz0123456789[];,.'/\\`=- ";
     std::string text_shift = "ABCDEFGHIJKLMNOPQRSTUVWXYZ)!@#$%^&*({}:<>\"?|~+_ ";
+    bool select_all = false;
 
     bool is_textkey_pressed(olc::PixelGameEngine* pge, const TextKey& key);
 
     int get_char_id(olc::PixelGameEngine* pge);
 
     std::string get_char_from_id(olc::PixelGameEngine* pge);
+
+    std::string old_inputfield_text = inputfield_text;
+    std::string text_out_of_view;
+    std::string displayed_text;
 
 public:
     FUI_Inputfield(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
@@ -1616,8 +1627,14 @@ void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
 
     auto absolute_position = adaptive_position + position;
 
+    // title text
+    auto text_position = olc::vf2d(absolute_position.x - (pge->GetTextSizeProp(text).x * text_scale.x), absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
+    pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
+
     // background
-    pge->FillRect(absolute_position, size, color_scheme.inputfield_background);
+    pge->FillRectDecal(absolute_position, size, color_scheme.inputfield_background);
+    if (select_all)
+        pge->FillRectDecal(absolute_position, olc::vf2d(pge->GetTextSizeProp(displayed_text).x * text_scale.x, size.y), color_scheme.inputfield_select_all_background);
     // top left outline
     pge->FillRectDecal(absolute_position, olc::vf2d(size.x, 1), color_scheme.inputfield_outline);
     // left outline
@@ -1628,8 +1645,27 @@ void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
     pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.inputfield_outline);
 
     // render the text
-    auto text_position = olc::vf2d(absolute_position.x, absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(inputfield_text).y * text_scale.y) / 2));
-    pge->DrawStringPropDecal(text_position, inputfield_text, text_color);
+    text_position = olc::vf2d(absolute_position.x, absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(displayed_text).y * text_scale.y) / 2));
+    auto cursor_position = olc::vf2d(text_position.x + (pge->GetTextSizeProp(displayed_text).x * text_scale.x), text_position.y + (pge->GetTextSizeProp(displayed_text).y * text_scale.y));
+
+    if (pge->GetTextSizeProp(displayed_text).x <= size.x && inputfield_text.size() > old_inputfield_text.size())
+    {
+        displayed_text += inputfield_text.back();
+        old_inputfield_text = inputfield_text;
+    }
+    else if (pge->GetTextSizeProp(displayed_text).x >= size.x)
+    {
+        text_out_of_view.push_back(displayed_text.front());
+        displayed_text.erase(0, 1);
+    }
+
+    pge->DrawStringPropDecal(text_position, displayed_text, text_color, text_scale);
+
+    if (cursor_position.x + (pge->GetTextSizeProp("_").x * text_scale.x) > absolute_position.x + size.x)
+        cursor_position.x -= (cursor_position.x + (pge->GetTextSizeProp("_").x * text_scale.x)) - (absolute_position.x + size.x);
+
+    if (state == State::ACTIVE)
+        pge->FillRectDecal(cursor_position, { pge->GetTextSizeProp("_").x * text_scale.x, 1 }, color_scheme.inputfield_cursor);
 }
 
 void FUI_Inputfield::input(olc::PixelGameEngine* pge)
@@ -1645,11 +1681,35 @@ void FUI_Inputfield::input(olc::PixelGameEngine* pge)
     else if (pge->GetMouse(0).bPressed && state == State::ACTIVE)
         state = State::NONE;
 
+    if (pge->GetKey(olc::ENTER).bPressed || pge->GetKey(olc::ESCAPE).bPressed)
+        state = State::NONE;
+
     if (state == State::ACTIVE)
     {
-        if (pge->GetKey(olc::BACK).bPressed)
+        if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::A).bPressed)
+            select_all = true;
+        if (pge->GetKey(olc::BACK).bPressed && !select_all && inputfield_text.size() > 0)
+        {
             inputfield_text.pop_back();
-        inputfield_text += get_char_from_id(pge);
+            displayed_text.pop_back();
+            old_inputfield_text.pop_back();
+            if (text_out_of_view.size() > 0)
+            {
+                displayed_text.insert(0, &text_out_of_view.back());
+                text_out_of_view.pop_back();
+            }
+        }
+        else if (pge->GetKey(olc::BACK).bPressed && select_all)
+        {
+            inputfield_text.clear();
+            displayed_text.clear();
+            text_out_of_view.clear();
+            old_inputfield_text.clear();
+            select_all = false;
+        }
+
+        if (!pge->GetKey(olc::CTRL).bHeld)
+            inputfield_text += get_char_from_id(pge);
     }
 }
 
