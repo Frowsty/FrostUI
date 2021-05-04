@@ -28,6 +28,8 @@ public:
     std::vector<std::string> current_elements;
     std::vector<std::string> old_elements;
 
+    float slider_value = 0.0f;
+    float old_slider_value = slider_value;
 public:
     bool OnUserCreate() override
     {
@@ -45,22 +47,27 @@ public:
 
         frost_ui.set_active_window("new_window");
 
-        frost_ui.add_groupbox("groupbox1", "This is a groupbox", { 5, 10 }, { 210, 80 });
+        frost_ui.add_groupbox("groupbox1", "This is a groupbox", { 5, 10 }, { 210, 120 });
+        auto groupbox = frost_ui.find_groupbox("groupbox1");
+        if (groupbox)
+            groupbox->set_text_color(olc::BLACK);
         auto groupbox_pos = frost_ui.find_groupbox("groupbox1")->get_position();
 
         // dropdown example
         frost_ui.add_dropdown("dropID1", "Select an item: ", { groupbox_pos.x + 100, groupbox_pos.y + 10 }, { 100, 20 });
         frost_ui.find_element("dropID1")->set_text_color(olc::BLACK);
         frost_ui.find_element("dropID1")->scale_text({ 1.0f, 1.0f });
-        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f }, "Cool item");
-        frost_ui.find_element("dropID1")->add_item({ 1.0f, 1.0f }, "Cool item2");
+        frost_ui.find_element("dropID1")->add_item("Cool item");
+        frost_ui.find_element("dropID1")->add_item("Cool item2");
 
         // dropdown example
         frost_ui.add_combolist("comboID1", "Select items: ", { groupbox_pos.x + 100, groupbox_pos.y + 50 }, { 100, 20 });
         frost_ui.find_element("comboID1")->set_text_color(olc::BLACK);
-        frost_ui.find_element("comboID1")->scale_text({ 1.0f, 1.0f });
-        frost_ui.find_element("comboID1")->add_item({ 1.0f, 1.0f }, "Cool item");
-        frost_ui.find_element("comboID1")->add_item({ 1.0f, 1.0f }, "Cool item2");
+        frost_ui.find_element("comboID1")->add_item("Cool item");
+        frost_ui.find_element("comboID1")->add_item("Cool item2");
+
+        frost_ui.add_slider("slider1", "Testing", { groupbox_pos.x + 100, groupbox_pos.y + 90 }, { 100, 10 }, { 0.0f, 50.0f }, &slider_value);
+        frost_ui.find_element("slider1")->set_text_color(olc::BLACK);
 
         // Set the active window (window that will be used to add elements)
         frost_ui.set_active_window("main_window");
@@ -102,12 +109,12 @@ public:
                 }
             });
 
-        frost_ui.add_button("id99", "Toggle Button", { 5, 125 }, { 100, 20 }, nullptr);
+        frost_ui.add_button("id99", "Toggle Button", { 5, 75 }, { 100, 20 }, nullptr);
         frost_ui.find_element("id99")->make_toggleable(&button_state);
 
         frost_ui.clear_active_group();
 
-        frost_ui.add_checkbox("id5", "HELLO WORLD", { 5, 75 }, { 20, 20 }, &checkbox_state);
+        frost_ui.add_checkbox("id5", "Checkbox", { 215, 55 }, { 10, 10 }, &checkbox_state);
         frost_ui.find_element("id5")->set_text_color(olc::BLACK);
         frost_ui.find_element("id5")->set_checkbox_orientation("left");
 
@@ -164,11 +171,14 @@ public:
                 text += element + " ";
             std::cout << text << "\n";
         }
+        if (slider_value != old_slider_value)
+            std::cout << "Slider value: " << slider_value << "\n";
 
         last_btn_state = button_state;
         last_cb_state = checkbox_state;
         old_element = frost_ui.find_element("dropID1")->get_selected_item();
         old_elements = frost_ui.find_element("comboID1")->get_selected_items();
+        old_slider_value = slider_value;
 
         frost_ui.run();
 

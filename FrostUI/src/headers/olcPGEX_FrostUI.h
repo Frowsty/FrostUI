@@ -49,10 +49,9 @@
     ~~~~~~
     Daniel aka Frosty
 */
-
-#include <deque>
 #ifndef OLC_PGEX_FROSTUI
 #define OLC_PGEX_FROSTUI
+#include <deque>
 
 struct FUI_Colors
 {
@@ -80,8 +79,12 @@ struct FUI_Colors
     olc::Pixel combolist_hover = { 150, 150, 150 };
     olc::Pixel combolist_active = { 100, 100, 100 };
     // combolist colors
-    olc::Pixel groupbox_outline = olc::BLACK;
+    olc::Pixel groupbox_outline = olc::GREY;
     olc::Pixel groupbox_background = { 225, 225, 225 };
+    // slider colors
+    olc::Pixel slider_outline = olc::BLACK;
+    olc::Pixel slider_normal = { 150, 150, 150 };
+    olc::Pixel slider_hover = { 100, 100, 100 };
 };
 
 FUI_Colors color_scheme;
@@ -93,8 +96,17 @@ enum class FUI_Type
     CHECKBOX,
     DROPDOWN,
     COMBOLIST,
-    GROUPBOX
+    GROUPBOX,
+    SLIDER
 };
+
+std::string to_string_with_precision(const float a_value, const int n = 6)
+{
+    std::ostringstream out;
+    out.precision(n);
+    out << std::fixed << a_value;
+    return out.str();
+}
 
 olc::vf2d auto_scaling(olc::vf2d text_size, olc::vf2d text_scale, olc::vf2d element_size)
 {
@@ -329,11 +341,15 @@ public:
     FUI_Window* parent = nullptr;
     olc::vi2d size;
     olc::vi2d position;
-    olc::vi2d adaptive_position;
+    olc::vf2d adaptive_position;
     std::string text;
     std::string group;
     olc::vf2d text_scale = { 1.0f, 1.0f };
     FUI_Type ui_type;
+
+    float slider_value = 0.f;
+    float* slier_value_holder = nullptr;
+    olc::vf2d range;
 
     std::string checkbox_orientation = "left";
     int checkbox_padding = 5;
@@ -383,7 +399,7 @@ public:
 
     void make_toggleable(bool* state) { if (ui_type == FUI_Type::BUTTON) toggle_button_state = state; else std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n"; }
 
-    void add_item(olc::vf2d scale, const std::string& item) { if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)  elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item))); else std::cout << "Trying to add_item to wrong UI_TYPE\n"; }
+    void add_item(const std::string& item, olc::vf2d scale = { 1.0f, 1.0f }) { if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)  elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item))); else std::cout << "Trying to add_item to wrong UI_TYPE\n"; }
     
     void set_animation_speed(float speed) { if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST) animation_speed = speed; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
 
@@ -403,6 +419,8 @@ public:
     }
 
     const olc::vi2d get_position() const { return position; }
+
+    const float get_slider_value() const { if (ui_type == FUI_Type::SLIDER) return slider_value; }
 };
 
 /*
@@ -1260,8 +1278,152 @@ void FUI_Groupbox::draw(olc::PixelGameEngine* pge)
     pge->FillRectDecal(olc::vi2d(line_position.x, line_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.groupbox_outline);
 
     auto text_size = pge->GetTextSizeProp(text) * text_scale;
-    pge->DrawStringPropDecal(olc::vf2d(line_position.x + (size.x / 2) - (text_size.x / 2), line_position.y - (text_size.y / 2)), text, olc::BLACK);
+    pge->DrawStringPropDecal(olc::vf2d(line_position.x + (size.x / 2) - (text_size.x / 2), line_position.y - (text_size.y / 2)), text, text_color);
 
+}
+
+/*
+####################################################
+################FUI_SLIDER START####################
+####################################################
+*/
+class FUI_Slider : public FUI_Element
+{
+private:
+    enum class State
+    {
+        NONE = 0,
+        HOVER,
+        ACTIVE
+    };
+    float ratio = 0.f;
+    State state = State::NONE;
+public:
+    FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+    FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+    FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+    FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+
+    void draw(olc::PixelGameEngine* pge) override;
+
+    void input(olc::PixelGameEngine* pge) override;
+};
+
+FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    range = r;
+    slier_value_holder = vh;
+    ui_type = FUI_Type::SLIDER;
+}
+
+FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    range = r;
+    slier_value_holder = vh;
+    ui_type = FUI_Type::SLIDER;
+}
+
+FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    parent = pt;
+    position = p;
+    group = g;
+    range = r;
+    slier_value_holder = vh;
+    ui_type = FUI_Type::SLIDER;
+}
+
+FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+{
+    identifier = id;
+    text = t;
+    size = s;
+    position = p;
+    group = g;
+    range = r;
+    slier_value_holder = vh;
+    ui_type = FUI_Type::SLIDER;
+}
+
+void FUI_Slider::draw(olc::PixelGameEngine* pge)
+{
+    // Adapt positioning depending on if there's a parent to the element or not
+    if (parent)
+        adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+    else
+        adaptive_position = olc::vi2d(0, 0);
+    
+    auto absolute_position = position + adaptive_position;
+
+    // draw title with slider value
+    std::string temp_text = text + " [" + to_string_with_precision(slider_value, 2) + "] ";
+    pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - (pge->GetTextSizeProp(temp_text).x * text_scale.y),
+                                       absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2)), temp_text, text_color);
+
+    // draw slider body
+    switch (state)
+    {
+    case State::NONE:
+        pge->FillRectDecal(absolute_position, olc::vf2d(size.x * ratio, size.y), color_scheme.slider_normal);
+        break;
+    case State::HOVER:
+        pge->FillRectDecal(absolute_position, olc::vf2d(size.x * ratio, size.y), color_scheme.slider_hover);
+        break;
+    case State::ACTIVE:
+        pge->FillRectDecal(absolute_position, olc::vf2d(size.x * ratio, size.y), color_scheme.slider_hover);
+        break;
+    }
+    // top left outline
+    pge->FillRectDecal(absolute_position, olc::vf2d(size.x, 1), color_scheme.slider_outline);
+    // left outline
+    pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.slider_outline);
+    // right outline
+    pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x, absolute_position.y), olc::vi2d(1, size.y), color_scheme.slider_outline);
+    // bottom outline
+    pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.slider_outline);
+}
+
+void FUI_Slider::input(olc::PixelGameEngine* pge)
+{
+    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+        pge->GetMousePos().y >= adaptive_position.y + position.y &&
+        pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
+    {
+        state = State::HOVER;
+        if (pge->GetMouse(0).bHeld)
+            state = State::ACTIVE;
+    }
+    else if (state != State::ACTIVE)
+        state = State::NONE;
+
+    if (pge->GetMouse(0).bReleased)
+        state = State::NONE;
+
+    if (state == State::ACTIVE)
+    {
+        float slider_delta = (pge->GetMouseX() - (adaptive_position.x + position.x));
+        if (slider_delta <= range.x)
+            slider_delta = range.x;
+        else if (slider_delta >= size.x)
+            slider_delta = size.x;
+
+        ratio = (slider_delta / size.x);
+        slider_value = range.x + (range.y - range.x) * ratio;
+        *slier_value_holder = slider_value;
+    }
 }
 
 /*
@@ -1406,6 +1568,10 @@ public:
     void add_groupbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
     void add_groupbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
+
+    void add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+
+    void add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
 
     void add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
 
@@ -1712,6 +1878,54 @@ void olcPGEX_FrostUI::add_groupbox(const std::string& identifier, const std::str
         std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
 }
 
+void olcPGEX_FrostUI::add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+{
+    if (!find_element(identifier))
+    {
+        if (windows.size() > 0)
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == parent_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder)));
+                else
+                    std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+            }
+        }
+        else
+            std::cout << "There's no windows to be used as parent (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+}
+
+void olcPGEX_FrostUI::add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+{
+    if (!find_element(identifier))
+    {
+        if (!active_window_id.empty())
+        {
+            for (auto& window : windows)
+            {
+                if (window->get_id() == active_window_id)
+                    if (!active_group.empty())
+                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder)));
+                    else
+                        elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder)));
+            }
+        }
+        else
+            if (!active_group.empty())
+                elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, active_group, text, position, size, range, value_holder)));
+            else
+                elements.push_back(std::make_pair(FUI_Type::SLIDER, std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder)));
+    }
+    else
+        std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+}
 
 void olcPGEX_FrostUI::add_button(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
 {
