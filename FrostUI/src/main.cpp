@@ -68,6 +68,7 @@ public:
 
         frost_ui.add_slider("slider1", "Testing", { groupbox_pos.x + 100, groupbox_pos.y + 90 }, { 100, 10 }, { 0.0f, 50.0f }, &slider_value);
         frost_ui.find_element("slider1")->set_text_color(olc::BLACK);
+        frost_ui.find_element("slider1")->set_slider_value(22.5f);
 
         // Set the active window (window that will be used to add elements)
         frost_ui.set_active_window("main_window");

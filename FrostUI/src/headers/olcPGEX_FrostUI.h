@@ -420,6 +420,8 @@ public:
 
     const olc::vi2d get_position() const { return position; }
 
+    void set_slider_value(float value) { if (ui_type == FUI_Type::SLIDER) slider_value = value; }
+
     const float get_slider_value() const { if (ui_type == FUI_Type::SLIDER) return slider_value; }
 };
 
@@ -1371,6 +1373,9 @@ void FUI_Slider::draw(olc::PixelGameEngine* pge)
     std::string temp_text = text + " [" + to_string_with_precision(slider_value, 2) + "] ";
     pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - (pge->GetTextSizeProp(temp_text).x * text_scale.y),
                                        absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2)), temp_text, text_color);
+
+    if (ratio == 0.0f)
+        ratio = slider_value / range.y;
 
     // draw slider body
     switch (state)
