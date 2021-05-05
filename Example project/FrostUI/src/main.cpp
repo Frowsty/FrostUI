@@ -13,7 +13,7 @@ public:
         sAppName = "FrostUI Example Program";
     }
 
-    olc::olcPGEX_FrostUI frost_ui;
+    olc::FrostUI frost_ui;
 public:
     bool OnUserCreate() override
     {
