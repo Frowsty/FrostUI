@@ -1,3 +1,37 @@
-# FrostUI
+# olcPGEX_FrostUI
 
-My first attempt at GUI Framework without any research on the topic. Nothing is optimized thus not being very performant but allows for pretty easy implementations of GUIs for any type of application. Framework is very much in development and does not offer a lot of features but I plan on adding more elements as I find more time during my days to work on this project.
+This extension is designed for use with the [olcPixelGameEngine](https://github.com/OneLoneCoder/olcPixelGameEngine) by [Javidx9](https://github.com/OneLoneCoder).
+
+---
+
+## Usage
+
+To use the olcPGEX_FrostUI extension, it needs to be included in your application.
+
+```cpp
+#define OLC_PGEX_FUI
+#include "olcPGEX_FrostUI.h"
+```
+
+### Example usage
+
+```cpp
+olc::FrostUI ui; // create the UI handler
+
+bool OnUserCreate()
+{
+    //create all ui windows/elements here by using the available functions
+
+    return true;
+}
+
+bool OnUserUpdate(float fElapsedTime)
+{
+    Clear(olc::BLACK)
+
+    ui.run(); // run the UI handler
+    
+    return true;
+}
+```
+(A wiki page is planned)
