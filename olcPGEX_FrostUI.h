@@ -1,5 +1,5 @@
 /*
-    olcPGEX_FrostUI.h
+    FrostUI.h
 
     +-------------------------------------------------------------+
     |         OneLoneCoder Pixel Game Engine Extension            |
@@ -448,7 +448,7 @@ namespace olc
         void input(olc::PixelGameEngine* pge) override;
     };
 
-    class olcPGEX_FrostUI : public olc::PGEX
+    class FrostUI : public olc::PGEX
     {
     private:
         std::deque<FUI_Window*> windows;
@@ -468,7 +468,7 @@ namespace olc
 
         void set_active_group(const std::string& g);
 
-        FUI_Window* create_window(const std::string& identifier, olc::vi2d position, olc::vi2d size, const std::string& title);
+        FUI_Window* create_window(const std::string& identifier, const std::string& title, olc::vi2d position, olc::vi2d size);
 
         void add_group(const std::string& g);
 
@@ -1862,7 +1862,7 @@ namespace olc
     #               FUI_HANDLER START                  #
     ####################################################
     */
-    void olcPGEX_FrostUI::push_focused_to_back()
+    void FrostUI::push_focused_to_back()
     {
         int i = 0;
         for (auto& window : windows)
@@ -1881,7 +1881,7 @@ namespace olc
         }
     }
 
-    void olcPGEX_FrostUI::push_focused_element_to_back()
+    void FrostUI::push_focused_element_to_back()
     {
         int i = 0;
         for (auto& element : elements)
@@ -1895,7 +1895,7 @@ namespace olc
         }
     }
 
-    void olcPGEX_FrostUI::set_active_window(const std::string& window_id)
+    void FrostUI::set_active_window(const std::string& window_id)
     {
         for (auto& window : windows)
         {
@@ -1911,7 +1911,7 @@ namespace olc
             std::cout << "Could not find the window ID in added windows (function affected: set_active_window, affected window_id: " + window_id + ")\n";
     }
 
-    void olcPGEX_FrostUI::set_active_group(const std::string& g)
+    void FrostUI::set_active_group(const std::string& g)
     {
         for (auto group : groups)
         {
@@ -1927,7 +1927,7 @@ namespace olc
             std::cout << "Could not find the group ID in added windows (function affected: set_active_group, affected window_id: " + g + ")\n";
     }
 
-    FUI_Window* olcPGEX_FrostUI::create_window(const std::string& identifier, olc::vi2d position, olc::vi2d size, const std::string& title)
+    FUI_Window* FrostUI::create_window(const std::string& identifier, const std::string& title, olc::vi2d position, olc::vi2d size)
     {
         bool is_duplicate = false;
         FUI_Window* temp_window = nullptr;
@@ -1950,7 +1950,7 @@ namespace olc
         return temp_window;
     }
 
-    void olcPGEX_FrostUI::add_group(const std::string& g)
+    void FrostUI::add_group(const std::string& g)
     {
         bool is_duplicate = false;
         for (auto group : groups)
@@ -1964,11 +1964,11 @@ namespace olc
             std::cout << "Cannot add duplicates of same group (function affected: add_group, affected group_id: " + g + ")\n";
     }
 
-    void olcPGEX_FrostUI::clear_active_group() { active_group.clear(); }
+    void FrostUI::clear_active_group() { active_group.clear(); }
 
-    const std::string& olcPGEX_FrostUI::get_active_group() { return active_group; }
+    const std::string& FrostUI::get_active_group() { return active_group; }
 
-    FUI_Window* olcPGEX_FrostUI::find_window(const std::string& identifier)
+    FUI_Window* FrostUI::find_window(const std::string& identifier)
     {
         for (auto& window : windows)
         {
@@ -1979,9 +1979,9 @@ namespace olc
         return nullptr;
     }
 
-    int olcPGEX_FrostUI::get_element_amount() { return elements.size(); }
+    int FrostUI::get_element_amount() { return elements.size(); }
 
-    void olcPGEX_FrostUI::remove_element(const std::string& id)
+    void FrostUI::remove_element(const std::string& id)
     {
         int i = 0;
         for (auto& element : elements)
@@ -1995,7 +1995,7 @@ namespace olc
         }
     }
 
-    std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_element(const std::string& id)
+    std::shared_ptr<FUI_Element> FrostUI::find_element(const std::string& id)
     {
         for (auto& element : elements)
         {
@@ -2005,7 +2005,7 @@ namespace olc
         return nullptr;
     }
 
-    std::shared_ptr<FUI_Element> olcPGEX_FrostUI::find_groupbox(const std::string& id)
+    std::shared_ptr<FUI_Element> FrostUI::find_groupbox(const std::string& id)
     {
         for (auto& element : groupboxes)
         {
@@ -2015,7 +2015,7 @@ namespace olc
         return nullptr;
     }
 
-    void olcPGEX_FrostUI::add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position)
+    void FrostUI::add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position)
     {
         if (!find_element(identifier))
         {
@@ -2039,7 +2039,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_label(const std::string& identifier, const std::string& text, olc::vi2d position)
+    void FrostUI::add_label(const std::string& identifier, const std::string& text, olc::vi2d position)
     {
         if (!find_element(identifier))
         {
@@ -2064,7 +2064,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+    void FrostUI::add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
     {
         if (!find_element(identifier))
         {
@@ -2088,7 +2088,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+    void FrostUI::add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
     {
         if (!find_element(identifier))
         {
@@ -2113,7 +2113,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_dropdown(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_dropdown(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2137,7 +2137,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_dropdown(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_dropdown(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2162,7 +2162,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_combolist(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_combolist(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2186,7 +2186,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_combolist(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_combolist(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2211,7 +2211,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_groupbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_groupbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2235,7 +2235,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_groupbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_groupbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2260,7 +2260,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+    void FrostUI::add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
     {
         if (!find_element(identifier))
         {
@@ -2284,7 +2284,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+    void FrostUI::add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
     {
         if (!find_element(identifier))
         {
@@ -2309,7 +2309,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_button(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+    void FrostUI::add_button(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
     {
         if (!find_element(identifier))
         {
@@ -2333,7 +2333,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_button(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
+    void FrostUI::add_button(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback)
     {
         if (!find_element(identifier))
         {
@@ -2358,7 +2358,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_inputfield(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_inputfield(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2382,7 +2382,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::add_inputfield(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
+    void FrostUI::add_inputfield(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -2407,7 +2407,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
     }
 
-    void olcPGEX_FrostUI::run()
+    void FrostUI::run()
     {
         // Draw standalone elements first (standalone elements are elements without a parent / window)
 

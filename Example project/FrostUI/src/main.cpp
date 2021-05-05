@@ -19,7 +19,7 @@ public:
     {
         
         // Create all windows
-        auto main_window = frost_ui.create_window("main_window", { 10, 25 }, { 250, 170 }, "Login window");
+        auto main_window = frost_ui.create_window("main_window", "Login window", { 10, 25 }, { 250, 170 });
 
         frost_ui.set_active_window("main_window");
 

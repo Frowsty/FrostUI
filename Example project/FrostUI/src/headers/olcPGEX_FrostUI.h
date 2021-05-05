@@ -468,7 +468,7 @@ namespace olc
 
         void set_active_group(const std::string& g);
 
-        FUI_Window* create_window(const std::string& identifier, olc::vi2d position, olc::vi2d size, const std::string& title);
+        FUI_Window* create_window(const std::string& identifier, const std::string& title, olc::vi2d position, olc::vi2d size);
 
         void add_group(const std::string& g);
 
@@ -1927,7 +1927,7 @@ namespace olc
             std::cout << "Could not find the group ID in added windows (function affected: set_active_group, affected window_id: " + g + ")\n";
     }
 
-    FUI_Window* FrostUI::create_window(const std::string& identifier, olc::vi2d position, olc::vi2d size, const std::string& title)
+    FUI_Window* FrostUI::create_window(const std::string& identifier, const std::string& title, olc::vi2d position, olc::vi2d size)
     {
         bool is_duplicate = false;
         FUI_Window* temp_window = nullptr;
