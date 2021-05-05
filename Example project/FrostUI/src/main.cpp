@@ -1,5 +1,6 @@
 #define OLC_PGE_APPLICATION
 #define OLC_GFX_OPENGL33
+#define OLC_PGEX_FUI
 
 #include "headers/olcPixelGameEngine.h"
 #include "headers/olcPGEX_FrostUI.h"
@@ -12,11 +13,11 @@ public:
         sAppName = "FrostUI Example Program";
     }
 
-    olcPGEX_FrostUI frost_ui;
-
+    olc::olcPGEX_FrostUI frost_ui;
 public:
     bool OnUserCreate() override
     {
+        
         // Create all windows
         auto main_window = frost_ui.create_window("main_window", { 10, 25 }, { 250, 170 }, "Login window");
 
@@ -52,19 +53,21 @@ public:
                 }
             }
         );
-
+        
         return true;
     }
 
     bool OnUserUpdate(float fElapsedTime) override
     {
         Clear(olc::BLACK);
+        
         if (GetKey(olc::ESCAPE).bPressed)
             return false;
         if (GetKey(olc::SHIFT).bPressed)
             frost_ui.find_window("main_window")->close_window(false);
         
         frost_ui.run();
+        
 
         return true;
     }
