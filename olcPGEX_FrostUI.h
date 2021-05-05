@@ -353,15 +353,13 @@ public:
     std::string text;
     std::string group;
     olc::vf2d text_scale = { 1.0f, 1.0f };
+    olc::vf2d input_scale = { 1.0f, 1.0f };
     FUI_Type ui_type;
 
     float slider_value = 0.f;
     float* slier_value_holder = nullptr;
     olc::vf2d range;
 
-    std::string checkbox_orientation = "left";
-    int checkbox_padding = 5;
-    bool centered = false;
     bool* toggle_button_state = nullptr;
 
     std::string inputfield_text = "";
@@ -374,7 +372,7 @@ public:
     std::vector<std::string> return_selected_items;
     float animation_speed = 150.0f;
 
-    olc::Pixel text_color = olc::WHITE;
+    olc::Pixel text_color = olc::BLACK;
 
     std::string identifier;
 
@@ -392,20 +390,9 @@ public:
 
     std::string get_group() const { return group; }
 
-    void set_centered(bool center) { if (ui_type == FUI_Type::LABEL) centered = center; else std::cout << "Trying to set_centered on wrong UI_TYPE\n"; }
-
     void scale_text(olc::vf2d scale) { text_scale = scale; }
 
-    void set_checkbox_orientation(std::string orientation)
-    {
-        if (ui_type == FUI_Type::CHECKBOX)
-            if (orientation == "left" || orientation == "right")
-                checkbox_orientation = orientation;
-            else
-                std::cout << "orientation '" + orientation + "' not found, orientations are 'left' and 'right' (function affected: set_checkbox_orientation, affected checkbox_id: " + identifier + ")\n";
-    }
-
-    void set_checkbox_padding(int padding) { if (ui_type == FUI_Type::CHECKBOX) checkbox_padding = padding; else std::cout << "Trying to set padding on wrong UI_TYPE\n"; }
+    void inputfield_scale(olc::vf2d scale) { input_scale = scale; }
 
     void make_toggleable(bool* state) { if (ui_type == FUI_Type::BUTTON) toggle_button_state = state; else std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n"; }
 
@@ -435,6 +422,8 @@ public:
     const float get_slider_value() const { if (ui_type == FUI_Type::SLIDER) return slider_value; }
 
     const std::string get_inputfield_value() const { if (ui_type == FUI_Type::INPUTFIELD) return inputfield_text; }
+
+    olc::vi2d get_text_size(olc::PixelGameEngine* pge) { return pge->GetTextSizeProp(text) * text_scale; }
 };
 
 /*
@@ -495,13 +484,9 @@ void FUI_Label::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0, 0);
 
-    olc::vf2d temp = { adaptive_position.x + position.x - ((pge->GetTextSizeProp(text).x * text_scale.x) / 2),
-                       adaptive_position.y + position.y - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2) };
-
-    if (centered)
-        pge->DrawStringPropDecal(temp, text, text_color, text_scale);
-    else
-        pge->DrawStringPropDecal(adaptive_position + position, text, text_color, text_scale);
+    auto absolute_position = adaptive_position + position;
+    
+    pge->DrawStringPropDecal(absolute_position, text, text_color, text_scale);
 }
 
 /*
@@ -586,22 +571,25 @@ void FUI_Button::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0,0);
 
+    auto absolute_position = adaptive_position + position;
+    auto text_size = pge->GetTextSizeProp(text) * text_scale;
+
     // Draw the body of the button
     switch (state)
     {
     case State::NONE:
-        pge->FillRectDecal(adaptive_position + position, size, color_scheme.button_normal);
+        pge->FillRectDecal(absolute_position, size, color_scheme.button_normal);
         break;
     case State::HOVER:
-        pge->FillRectDecal(adaptive_position + position, size, color_scheme.button_hover);
+        pge->FillRectDecal(absolute_position, size, color_scheme.button_hover);
         break;
     case State::CLICK:
-        pge->FillRectDecal(adaptive_position + position, size, color_scheme.button_click);
+        pge->FillRectDecal(absolute_position, size, color_scheme.button_click);
         break;
     }
     // Draw the text
-    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(text).x * text_scale.x) / 2),
-                                        adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
+    olc::vf2d text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2),
+                                        absolute_position.y + (size.y / 2) - (text_size.y / 2));
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 }
 
@@ -664,7 +652,6 @@ private:
         ACTIVE
     };
 
-    olc::vf2d checkbox_position;
     bool* checkbox_state;
     State state = State::NONE;
 public:
@@ -730,23 +717,13 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0, 0);
 
-    checkbox_position = adaptive_position + position;
+    auto absolute_position = adaptive_position + position;
 
     // Draw the text
-    olc::vf2d text_position = adaptive_position;
-    if (checkbox_orientation == "left")
-    {
-        checkbox_position = olc::vf2d(adaptive_position.x + position.x + pge->GetTextSizeProp(text).x + checkbox_padding, adaptive_position.y + position.y);
-        text_position = olc::vf2d(adaptive_position.x + position.x,
-            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
-        pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
-    }
-    else if (checkbox_orientation == "right")
-    {
-        text_position = olc::vf2d(adaptive_position.x + position.x + size.x + checkbox_padding,
-            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
-        pge->FillRectDecal(checkbox_position, size, color_scheme.checkbox_normal);
-    }
+    auto text_size = pge->GetTextSizeProp(text) * text_scale;
+    auto text_position = olc::vf2d(absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y /2 ));
+    pge->FillRectDecal(absolute_position, size, color_scheme.checkbox_normal);
+    
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
     olc::vf2d checkbox_filling = olc::vf2d(1.0f, 1.0f);
@@ -758,12 +735,12 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
         break;
     case State::HOVER:
         *checkbox_state = false;
-        pge->FillRectDecal(checkbox_position + checkbox_filling, 
+        pge->FillRectDecal(absolute_position + checkbox_filling,
                           { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_hover);
         break;
     case State::ACTIVE:
         *checkbox_state = true;
-        pge->FillRectDecal(checkbox_position + checkbox_filling,
+        pge->FillRectDecal(absolute_position + checkbox_filling,
                           { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_active);
         break;
     }
@@ -771,10 +748,10 @@ void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
 
 void FUI_Checkbox::input(olc::PixelGameEngine* pge)
 {
-    if (pge->GetMousePos().x >= checkbox_position.x &&
-        pge->GetMousePos().x <= checkbox_position.x + size.x &&
-        pge->GetMousePos().y >= checkbox_position.y &&
-        pge->GetMousePos().y <= checkbox_position.y + size.y)
+    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+        pge->GetMousePos().y >= adaptive_position.y + position.y &&
+        pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
     {
         if (pge->GetMouse(0).bPressed)
         {
@@ -860,6 +837,9 @@ void FUI_Dropdown::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0, 0);
 
+    auto absolute_position = adaptive_position + position;
+    auto title_text_size = pge->GetTextSizeProp(text) * text_scale;
+
     if (is_open)
     {
         float future_y = size.y * elements.size();
@@ -875,47 +855,49 @@ void FUI_Dropdown::draw(olc::PixelGameEngine* pge)
     }
 
     // title position
-    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x - (pge->GetTextSizeProp(text).x * text_scale.x),
-        adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
+    olc::vf2d text_position = olc::vf2d(absolute_position.x - title_text_size.x,
+                                        absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
     switch (state)
     {
     case DropdownState::NONE:
-        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_normal);
+        pge->FillRectDecal(absolute_position, size, color_scheme.dropdown_normal);
         break;
     case DropdownState::HOVER:
-        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_hover);
+        pge->FillRectDecal(absolute_position, size, color_scheme.dropdown_hover);
         break;
     }
     if (active_size.y != size.y * elements.size())
-        pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
+        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
 
     if (!selected_element.second.empty())
     {
-        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(selected_element.second).x * selected_element.first.x) / 2),
-            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(selected_element.second).y * selected_element.first.y) / 2));
+        auto element_text_size = pge->GetTextSizeProp(selected_element.second) * selected_element.first;
+        text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                                  absolute_position.y + (size.y / 2) - (element_text_size.y / 2));
         pge->DrawStringPropDecal(text_position, selected_element.second, text_color, selected_element.first);
     }
 
     int i = 1;
     for (auto& element : elements)
     {
+        auto element_text_size = pge->GetTextSizeProp(element.second.second) * element.second.first;
         if (active_size.y >= size.y * i)
         {
             switch (element.first)
             {
             case DropdownState::NONE:
-                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
+                pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
                 break;
             case DropdownState::HOVER:
-                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
+                pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
                 break;
             }
         }
-        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(element.second.second).x * element.second.first.x) / 2),
-            adaptive_position.y + position.y + size.y + (size.y * i) - (size.y / 2) - ((pge->GetTextSizeProp(element.second.second).y * element.second.first.y) / 2));
-        if (adaptive_position.y + position.y + size.y + active_size.y > text_position.y + (pge->GetTextSizeProp(element.second.second).y + element.second.first.y))
+        text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                                  absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+        if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
             pge->DrawStringPropDecal(text_position, element.second.second, text_color, element.second.first);
         i++;
     }
@@ -1054,6 +1036,9 @@ void FUI_Combolist::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0, 0);
 
+    auto absolute_position = adaptive_position + position;
+    auto title_text_size = pge->GetTextSizeProp(text) * text_scale;
+
     if (is_open)
     {
         float future_y = size.y * elements.size();
@@ -1069,57 +1054,62 @@ void FUI_Combolist::draw(olc::PixelGameEngine* pge)
     }
     
     // title position
-    olc::vf2d text_position = olc::vf2d(adaptive_position.x + position.x - (pge->GetTextSizeProp(text).x * text_scale.x),
-        adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
+    olc::vf2d text_position = olc::vf2d(absolute_position.x - title_text_size.x,
+                                        absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
     switch (state)
     {
     case DropdownState::NONE:
-        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_normal);
+        pge->FillRectDecal(absolute_position, size, color_scheme.dropdown_normal);
         break;
     case DropdownState::HOVER:
-        pge->FillRectDecal(position + adaptive_position, size, color_scheme.dropdown_hover);
+        pge->FillRectDecal(absolute_position, size, color_scheme.dropdown_hover);
         break;
     }
     if (active_size.y != size.y * elements.size())
-        pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
+        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
 
     if (selected_elements.size() > 1)
     {
         std::string temp_text = selected_elements[0].second + ", ...";
-        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(temp_text).x * selected_elements[0].first.x) / 2),
-            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(temp_text).y * selected_elements[0].first.y) / 2));
+        auto element_text_size = pge->GetTextSizeProp(temp_text) * selected_elements[0].first;
+
+        text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                                  absolute_position.y + (size.y / 2) - (element_text_size.y / 2));
         pge->DrawStringPropDecal(text_position, temp_text, text_color, selected_elements[0].first);
     }
     else if (selected_elements.size() > 0)
     {
-        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(selected_elements[0].second).x * selected_elements[0].first.x) / 2),
-            adaptive_position.y + position.y + (size.y / 2) - ((pge->GetTextSizeProp(selected_elements[0].second).y * selected_elements[0].first.y) / 2));
+        auto element_text_size = pge->GetTextSizeProp(selected_elements[0].second) * selected_elements[0].first;
+
+        text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                                  absolute_position.y + (size.y / 2) - (element_text_size.y / 2));
         pge->DrawStringPropDecal(text_position, selected_elements[0].second, text_color, selected_elements[0].first);
     }
 
     int i = 1;
     for (auto& element : elements)
     {
+        auto element_text_size = pge->GetTextSizeProp(element.second.second) * element.second.first;
         if (active_size.y >= size.y * i)
         {
             switch (element.first)
             {
             case DropdownState::NONE:
-                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
+                pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
                 break;
             case DropdownState::HOVER:
-                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
+                pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
                 break;
             case DropdownState::ACTIVE:
-                pge->FillRectDecal(position + adaptive_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
+                pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
                 break;
             }
         }
-        text_position = olc::vf2d(adaptive_position.x + position.x + (size.x / 2) - ((pge->GetTextSizeProp(element.second.second).x * element.second.first.x) / 2),
-            adaptive_position.y + position.y + size.y + (size.y * i) - (size.y / 2) - ((pge->GetTextSizeProp(element.second.second).y * element.second.first.y) / 2));
-        if (adaptive_position.y + position.y + size.y + active_size.y > text_position.y + (pge->GetTextSizeProp(element.second.second).y + element.second.first.y))
+        text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                                  absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+        if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
             pge->DrawStringPropDecal(text_position, element.second.second, text_color, element.second.first);
         i++;
     }
@@ -1278,21 +1268,25 @@ void FUI_Groupbox::draw(olc::PixelGameEngine* pge)
     else
         adaptive_position = olc::vi2d(0, 0);
 
-    auto line_position = position + adaptive_position;
-    pge->FillRectDecal(line_position, size, color_scheme.groupbox_background);
-    // top left outline
-    pge->FillRectDecal(line_position, olc::vf2d((size.x / 2) - (pge->GetTextSizeProp(text).x / 2), 1), color_scheme.groupbox_outline);
-    // top right outline
-    pge->FillRectDecal(olc::vf2d(line_position.x + (size.x / 2) + (pge->GetTextSizeProp(text).x / 2), line_position.y), olc::vf2d(size.x - (size.x / 2) - (pge->GetTextSizeProp(text).x / 2), 1), color_scheme.groupbox_outline);
-    // left outline
-    pge->FillRectDecal(line_position, olc::vi2d(1, size.y), color_scheme.groupbox_outline);
-    // right outline
-    pge->FillRectDecal(olc::vi2d(line_position.x + size.x, line_position.y), olc::vi2d(1, size.y), color_scheme.groupbox_outline);
-    // bottom outline
-    pge->FillRectDecal(olc::vi2d(line_position.x, line_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.groupbox_outline);
-
+    auto absolute_position = position + adaptive_position;
     auto text_size = pge->GetTextSizeProp(text) * text_scale;
-    pge->DrawStringPropDecal(olc::vf2d(line_position.x + (size.x / 2) - (text_size.x / 2), line_position.y - (text_size.y / 2)), text, text_color);
+
+    pge->FillRectDecal(absolute_position, size, color_scheme.groupbox_background);
+
+    // top left outline
+    pge->FillRectDecal(absolute_position, olc::vf2d((size.x / 2) - (text_size.x / 2), 1), color_scheme.groupbox_outline);
+    // top right outline
+    pge->FillRectDecal(olc::vf2d(absolute_position.x + (size.x / 2) + (text_size.x / 2), absolute_position.y), 
+                       olc::vf2d(size.x - (size.x / 2) - (text_size.x / 2), 1), color_scheme.groupbox_outline);
+
+    // left outline
+    pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.groupbox_outline);
+    // right outline
+    pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x, absolute_position.y), olc::vi2d(1, size.y), color_scheme.groupbox_outline);
+    // bottom outline
+    pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.groupbox_outline);
+
+    pge->DrawStringPropDecal(olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2), absolute_position.y - (text_size.y / 2)), text, text_color);
 
 }
 
@@ -1383,8 +1377,8 @@ void FUI_Slider::draw(olc::PixelGameEngine* pge)
 
     // draw title with slider value
     std::string temp_text = text + " [" + to_string_with_precision(slider_value, 2) + "] ";
-    pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - (pge->GetTextSizeProp(temp_text).x * text_scale.y),
-                                       absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2)), temp_text, text_color);
+    auto text_size = pge->GetTextSizeProp(temp_text) * text_scale;
+    pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2)), temp_text, text_color);
 
     if (ratio == 0.0f)
         ratio = slider_value / range.y;
@@ -1626,9 +1620,11 @@ void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
         adaptive_position = olc::vi2d(0, 0);
 
     auto absolute_position = adaptive_position + position;
-
+    auto title_text_size = pge->GetTextSizeProp(text) * text_scale;
+    auto display_text_size = pge->GetTextSizeProp(displayed_text) * input_scale;
     // title text
-    auto text_position = olc::vf2d(absolute_position.x - (pge->GetTextSizeProp(text).x * text_scale.x), absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(text).y * text_scale.y) / 2));
+    auto text_position = olc::vf2d(absolute_position.x - title_text_size.x, absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
+    
     pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
     // background
@@ -1645,8 +1641,8 @@ void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
     pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.inputfield_outline);
 
     // render the text
-    text_position = olc::vf2d(absolute_position.x, absolute_position.y + (size.y / 2) - ((pge->GetTextSizeProp(displayed_text).y * text_scale.y) / 2));
-    auto cursor_position = olc::vf2d(text_position.x + (pge->GetTextSizeProp(displayed_text).x * text_scale.x), text_position.y + (pge->GetTextSizeProp(displayed_text).y * text_scale.y));
+    text_position = olc::vf2d(absolute_position.x, absolute_position.y + (size.y / 2) - (display_text_size.y / 2));
+    auto cursor_position = olc::vf2d(text_position.x + display_text_size.x, absolute_position.y + size.y - 2);
 
     if (pge->GetTextSizeProp(displayed_text).x <= size.x && inputfield_text.size() > old_inputfield_text.size())
     {
@@ -1659,13 +1655,13 @@ void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
         displayed_text.erase(0, 1);
     }
 
-    pge->DrawStringPropDecal(text_position, displayed_text, text_color, text_scale);
+    pge->DrawStringPropDecal(text_position, displayed_text, text_color, input_scale);
 
-    if (cursor_position.x + (pge->GetTextSizeProp("_").x * text_scale.x) > absolute_position.x + size.x)
-        cursor_position.x -= (cursor_position.x + (pge->GetTextSizeProp("_").x * text_scale.x)) - (absolute_position.x + size.x);
+    if (cursor_position.x + (pge->GetTextSizeProp("_").x * input_scale.x) > absolute_position.x + size.x)
+        cursor_position.x -= (cursor_position.x + (pge->GetTextSizeProp("_").x * input_scale.x)) - (absolute_position.x + size.x);
 
     if (state == State::ACTIVE)
-        pge->FillRectDecal(cursor_position, { pge->GetTextSizeProp("_").x * text_scale.x, 1 }, color_scheme.inputfield_cursor);
+        pge->FillRectDecal(cursor_position, { pge->GetTextSizeProp("_").x * input_scale.x, 1 }, color_scheme.inputfield_cursor);
 }
 
 void FUI_Inputfield::input(olc::PixelGameEngine* pge)
