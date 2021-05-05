@@ -24,9 +24,12 @@ bool OnUserCreate()
     /*
     create all ui windows/elements here by using the available functions
     */
+    
     //creating a window
     ui.create_window(std::string id, std::string title, olc::vi2d position, olc::vi2d size);
+    
     //How to add elements using ui.set_active_window(window_id):
+    ui.set_active_window(std::string window_id);
     add_button(std::string id, std::string text, olc::vi2d position, olc::vi2d size, callback);
     add_inputfield(std::string id, std::string text, olc::vi2d position, olc::vi2d size);
     
