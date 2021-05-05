@@ -16,26 +16,11 @@ To use the olcPGEX_FrostUI extension, it needs to be included in your applicatio
 ### Example usage
 
 ```cpp
-// define the 
-olc::FrostUI ui;
+olc::FrostUI ui; // create the UI handler
 
 bool OnUserCreate()
 {
-    /*
-    create all ui windows/elements here by using the available functions
-    */
-    
-    //creating a window
-    ui.create_window(std::string id, std::string title, olc::vi2d position, olc::vi2d size);
-    
-    //How to add elements using ui.set_active_window(window_id):
-    ui.set_active_window(std::string window_id);
-    add_button(std::string id, std::string text, olc::vi2d position, olc::vi2d size, callback);
-    add_inputfield(std::string id, std::string text, olc::vi2d position, olc::vi2d size);
-    
-    //How to add elements without using ui.set_active_window(window_id):
-    add_button(std::string window_id, std::string id, std::string text, olc::vi2d position, olc::vi2d size, callback);
-    add_inputfield(std::string window_id,std::string id, std::string text, olc::vi2d position, olc::vi2d size);
+    //create all ui windows/elements here by using the available functions
 
     return true;
 }
@@ -44,7 +29,7 @@ bool OnUserUpdate(float fElapsedTime)
 {
     Clear(olc::BLACK)
 
-    ui.run();
+    ui.run(); // run the UI handler
     
     return true;
 }
