@@ -94,8 +94,6 @@ struct FUI_Colors
     olc::Pixel inputfield_cursor = olc::BLACK;
 };
 
-FUI_Colors color_scheme;
-
 enum class FUI_Type
 {
     BUTTON = 0,
@@ -108,27 +106,6 @@ enum class FUI_Type
     INPUTFIELD
 };
 
-std::string to_string_with_precision(const float a_value, const int n = 6)
-{
-    std::ostringstream out;
-    out.precision(n);
-    out << std::fixed << a_value;
-    return out.str();
-}
-
-olc::vf2d auto_scaling(olc::vf2d text_size, olc::vf2d text_scale, olc::vf2d element_size)
-{
-    while ((text_size.y * text_scale.y) < element_size.y)
-    {
-        text_scale.y += 0.001;
-    }
-    while ((text_size.x * text_scale.x) < element_size.x)
-    {
-        text_scale.x += 0.001;
-    }
-    return text_scale;
-}
-
 class FUI_Window
 {
 private:
@@ -140,6 +117,8 @@ private:
     std::string title;
 
     FUI_Window* overlapping_window;
+
+    FUI_Colors color_scheme;
 
     enum class button_state
     {
@@ -329,13 +308,6 @@ void FUI_Window::input(std::deque<FUI_Window*> windows)
     }
 }
 
-enum class DropdownState
-{
-    NONE = 0,
-    HOVER,
-    ACTIVE
-};
-
 /*
 ####################################################
 ################FUI_ELEMENT START###################
@@ -345,7 +317,12 @@ enum class DropdownState
 class FUI_Element
 {
 public:
-
+    enum class DropdownState
+    {
+        NONE = 0,
+        HOVER,
+        ACTIVE
+    };
     FUI_Window* parent = nullptr;
     olc::vi2d size;
     olc::vi2d position;
@@ -355,6 +332,8 @@ public:
     olc::vf2d text_scale = { 1.0f, 1.0f };
     olc::vf2d input_scale = { 1.0f, 1.0f };
     FUI_Type ui_type;
+
+    FUI_Colors color_scheme;
 
     float slider_value = 0.f;
     float* slier_value_holder = nullptr;
@@ -1306,6 +1285,14 @@ private:
     };
     float ratio = 0.f;
     State state = State::NONE;
+
+    std::string to_string_with_precision(const float a_value, const int n = 6)
+    {
+        std::ostringstream out;
+        out.precision(n);
+        out << std::fixed << a_value;
+        return out.str();
+    }
 public:
     FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
     FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
@@ -1437,23 +1424,12 @@ void FUI_Slider::input(olc::PixelGameEngine* pge)
     }
 }
 
-
 /*
 ####################################################
 ################FUI_TEXTFIELD START#################
 ####################################################
 */
 // Credits to Megarev#2866 on discord for keyboard input related code
-enum class TextKey {
-    None = -1,
-    A = 0, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-    Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
-    LBracket, RBracket, Semicolon, Comma, Period, Quote, ForwardSlash, BackwardSlash,
-    Tilda, Equal, Hyphen, Space
-};
-
-int text_keys = 48;
-
 class FUI_Inputfield : public FUI_Element
 {
 private:
@@ -1462,6 +1438,17 @@ private:
         NONE = 0,
         ACTIVE
     };
+
+    enum class TextKey {
+        None = -1,
+        A = 0, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+        Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
+        LBracket, RBracket, Semicolon, Comma, Period, Quote, ForwardSlash, BackwardSlash,
+        Tilda, Equal, Hyphen, Space
+    };
+
+    int text_keys = 48;
+
     State state = State::NONE;
     std::string text_noshift = "abcdefghijklmnopqrstuvwxyz0123456789[];,.'/\\`=- ";
     std::string text_shift = "ABCDEFGHIJKLMNOPQRSTUVWXYZ)!@#$%^&*({}:<>\"?|~+_ ";
