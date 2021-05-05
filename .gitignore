@@ -37,11 +37,15 @@
 *.out
 *.app
 
+# Compressed files
+*.zip
+
 # Directories
-/.vs/
-/.vscode/
-/.git/
-/bin/
-/obj/
-/x64/
-/FrostUI/x64/
+*/.vs/
+*/.vscode/
+*/.git/
+*/bin/
+*/obj/
+*/x64/
+*/FrostUI/x64/
+*/FrostUI/WASM/
