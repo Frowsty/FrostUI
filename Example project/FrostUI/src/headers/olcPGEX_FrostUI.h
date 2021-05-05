@@ -183,7 +183,6 @@ namespace olc
         void set_focused(bool state);
 
         bool is_focused() const;
-
     };
 
     class FUI_Element
