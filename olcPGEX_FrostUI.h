@@ -1640,16 +1640,16 @@ void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
     // bottom outline
     pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.inputfield_outline);
 
-    // render the text
-    text_position = olc::vf2d(absolute_position.x, absolute_position.y + (size.y / 2) - (display_text_size.y / 2));
+    // render the text ( + 2 in text_position is used as an offset to not render the first letter inside of the outline)
+    text_position = olc::vf2d(absolute_position.x + 2, absolute_position.y + (size.y / 2) - (display_text_size.y / 2));
     auto cursor_position = olc::vf2d(text_position.x + display_text_size.x, absolute_position.y + size.y - 2);
 
-    if (pge->GetTextSizeProp(displayed_text).x <= size.x && inputfield_text.size() > old_inputfield_text.size())
+    if (display_text_size.x <= size.x && inputfield_text.size() > old_inputfield_text.size())
     {
         displayed_text += inputfield_text.back();
         old_inputfield_text = inputfield_text;
     }
-    else if (pge->GetTextSizeProp(displayed_text).x >= size.x)
+    else if (display_text_size.x >= size.x)
     {
         text_out_of_view.push_back(displayed_text.front());
         displayed_text.erase(0, 1);
@@ -1684,6 +1684,18 @@ void FUI_Inputfield::input(olc::PixelGameEngine* pge)
     {
         if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::A).bPressed)
             select_all = true;
+
+        // Clear text
+        if ((select_all && get_char_from_id(pge).size() > 0 && !pge->GetKey(olc::CTRL).bHeld) ||
+            (select_all && pge->GetKey(olc::BACK).bPressed))
+        {
+            inputfield_text.clear();
+            displayed_text.clear();
+            text_out_of_view.clear();
+            old_inputfield_text.clear();
+            select_all = false;
+        }
+        // Remove last character if backspace is pressed
         if (pge->GetKey(olc::BACK).bPressed && !select_all && inputfield_text.size() > 0)
         {
             inputfield_text.pop_back();
@@ -1695,17 +1707,10 @@ void FUI_Inputfield::input(olc::PixelGameEngine* pge)
                 text_out_of_view.pop_back();
             }
         }
-        else if (pge->GetKey(olc::BACK).bPressed && select_all)
-        {
-            inputfield_text.clear();
-            displayed_text.clear();
-            text_out_of_view.clear();
-            old_inputfield_text.clear();
-            select_all = false;
-        }
 
+        // Append character to string
         if (!pge->GetKey(olc::CTRL).bHeld)
-            inputfield_text += get_char_from_id(pge);
+            inputfield_text.append(get_char_from_id(pge));
     }
 }
 
