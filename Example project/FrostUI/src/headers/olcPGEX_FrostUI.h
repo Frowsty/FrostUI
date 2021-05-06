@@ -381,15 +381,9 @@ namespace olc
         };
         float ratio = 0.f;
         State state = State::NONE;
-#ifdef OLC_PGEX_FROSTUI
-        std::string to_string_with_precision(const float a_value, const int n = 6)
-        {
-            std::ostringstream out;
-            out.precision(n);
-            out << std::fixed << a_value;
-            return out.str();
-        }
-#endif
+
+        std::string to_string_with_precision(const float a_value, const int n);
+
     public:
         FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
         FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
@@ -1625,6 +1619,14 @@ namespace olc
         range = r;
         slier_value_holder = vh;
         ui_type = FUI_Type::SLIDER;
+    }
+
+    std::string FUI_Slider::to_string_with_precision(const float a_value, const int n = 6)
+    {
+        std::ostringstream out;
+        out.precision(n);
+        out << std::fixed << a_value;
+        return out.str();
     }
 
     void FUI_Slider::draw(olc::PixelGameEngine* pge)
