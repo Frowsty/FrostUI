@@ -34,4 +34,4 @@ bool OnUserUpdate(float fElapsedTime)
     return true;
 }
 ```
-(A wiki page is planned)
+A work in progress wiki page is available [here](https://github.com/Frowsty/FrostUI/wiki)
