@@ -183,7 +183,6 @@ namespace olc
         void set_focused(bool state);
 
         bool is_focused() const;
-
     };
 
     class FUI_Element
@@ -472,6 +471,8 @@ namespace olc
 
         void add_group(const std::string& g);
 
+        void clear_active_window();
+
         void clear_active_group();
 
         const std::string& get_active_group();
@@ -695,27 +696,74 @@ namespace olc
     #               FUI_ELEMENT START                  #
     ####################################################
     */
-    void FUI_Element::set_size(olc::vi2d s) { size = s; }
+    void FUI_Element::set_size(olc::vi2d s) 
+    {
+        size = s; 
+    }
 
-    void FUI_Element::set_position(olc::vi2d p) { position = p; }
+    void FUI_Element::set_position(olc::vi2d p) 
+    { 
+        position = p;
+    }
 
-    void FUI_Element::set_text(const std::string& txt) { text = txt; }
+    void FUI_Element::set_text(const std::string& txt) 
+    { 
+        text = txt;
+    }
 
-    void FUI_Element::set_text_color(olc::Pixel color) { text_color = color; }
+    void FUI_Element::set_text_color(olc::Pixel color) 
+    { 
+        text_color = color;
+    }
 
-    std::string FUI_Element::get_group() const { return group; }
+    std::string FUI_Element::get_group() const 
+    { 
+        return group;
+    }
 
-    void FUI_Element::scale_text(olc::vf2d scale) { text_scale = scale; }
+    void FUI_Element::scale_text(olc::vf2d scale) 
+    { 
+        text_scale = scale;
+    }
 
-    void FUI_Element::inputfield_scale(olc::vf2d scale) { input_scale = scale; }
+    void FUI_Element::inputfield_scale(olc::vf2d scale) 
+    { 
+        if (ui_type == FUI_Type::INPUTFIELD)
+            input_scale = scale;
+        else
+            std::cout << "Trying to use inputfield_scale on incorrect UI_TYPE\n";
+    }
 
-    void FUI_Element::make_toggleable(bool* state) { if (ui_type == FUI_Type::BUTTON) toggle_button_state = state; else std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n"; }
+    void FUI_Element::make_toggleable(bool* state) 
+    { 
+        if (ui_type == FUI_Type::BUTTON) 
+            toggle_button_state = state; 
+        else 
+            std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n";
+    }
 
-    void FUI_Element::add_item(const std::string& item, olc::vf2d scale = { 1.0f, 1.0f }) { if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)  elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item))); else std::cout << "Trying to add_item to wrong UI_TYPE\n"; }
+    void FUI_Element::add_item(const std::string& item, olc::vf2d scale = { 1.0f, 1.0f }) 
+    { 
+        if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)
+            elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item)));
+        else 
+            std::cout << "Trying to add_item to wrong UI_TYPE\n";
+    }
 
-    void FUI_Element::set_animation_speed(float speed) { if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST) animation_speed = speed; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
+    void FUI_Element::set_animation_speed(float speed) 
+    { 
+        if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST) 
+            animation_speed = speed;
+        else
+            std::cout << "Trying to set animation speed on wrong UI_TYPE\n";
+    }
 
-    std::string FUI_Element::get_selected_item() { if (ui_type == FUI_Type::DROPDOWN) return selected_element.second; else std::cout << "Trying to set animation speed on wrong UI_TYPE\n"; }
+    std::string FUI_Element::get_selected_item() 
+    { 
+        if (ui_type == FUI_Type::DROPDOWN) 
+            return selected_element.second; 
+        else std::cout << "Trying to set animation speed on wrong UI_TYPE\n";
+    }
 
     std::vector<std::string> FUI_Element::get_selected_items()
     {
@@ -727,18 +775,43 @@ namespace olc
 
             return return_selected_items;
         }
-        else std::cout << "Trying to retrieve selected items on wrong UI_TYPE\n";
+        else 
+            std::cout << "Trying to retrieve selected items on wrong UI_TYPE\n";
     }
 
-    const olc::vi2d FUI_Element::get_position() const { return position; }
+    const olc::vi2d FUI_Element::get_position() const 
+    { 
+        return position;
+    }
 
-    void FUI_Element::set_slider_value(float value) { if (ui_type == FUI_Type::SLIDER) slider_value = value; }
+    void FUI_Element::set_slider_value(float value) 
+    { 
+        if (ui_type == FUI_Type::SLIDER) 
+            slider_value = value;
+        else
+            std::cout << "Trying to set_slider_value on wrong UI_TYPE\n";
+    }
 
-    const float FUI_Element::get_slider_value() const { if (ui_type == FUI_Type::SLIDER) return slider_value; }
+    const float FUI_Element::get_slider_value() const 
+    { 
+        if (ui_type == FUI_Type::SLIDER) 
+            return slider_value;
+        else
+            std::cout << "Trying to get_slider_value on wrong UI_TYPE\n";
+    }
 
-    const std::string FUI_Element::get_inputfield_value() const { if (ui_type == FUI_Type::INPUTFIELD) return inputfield_text; }
+    const std::string FUI_Element::get_inputfield_value() const 
+    { 
+        if (ui_type == FUI_Type::INPUTFIELD) 
+            return inputfield_text;
+        else
+            std::cout << "Trying to get_inputfield_value on wrong UI_TYPE\n";
+    }
 
-    olc::vi2d FUI_Element::get_text_size(olc::PixelGameEngine* pge) { return pge->GetTextSizeProp(text) * text_scale; }
+    olc::vi2d FUI_Element::get_text_size(olc::PixelGameEngine* pge) 
+    { 
+        return pge->GetTextSizeProp(text) * text_scale;
+    }
 
     /*
     ####################################################
@@ -1963,6 +2036,8 @@ namespace olc
         else
             std::cout << "Cannot add duplicates of same group (function affected: add_group, affected group_id: " + g + ")\n";
     }
+
+    void FrostUI::clear_active_window() { active_window_id.clear(); }
 
     void FrostUI::clear_active_group() { active_group.clear(); }
 
