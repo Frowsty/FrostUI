@@ -139,6 +139,7 @@ namespace olc
         button_state state = button_state::NORMAL;
 
         bool is_dragging = false;
+        bool disable_drag = true;
 
         bool focused = false;
 
@@ -183,6 +184,8 @@ namespace olc
         void set_focused(bool state);
 
         bool is_focused() const;
+
+        void disable_dragging(bool state);
     };
 
     class FUI_Element
@@ -562,6 +565,8 @@ namespace olc
 
     bool FUI_Window::is_focused() const { return focused; }
 
+    void FUI_Window::disable_dragging(bool state) { disable_drag = state; }
+
     void FUI_Window::draw()
     {
         // Draw the main window area
@@ -638,25 +643,29 @@ namespace olc
         else
             state = button_state::NORMAL;
 
-        if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x - (size.x / 10) &&
-            pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + top_border_thickness) || is_dragging)
+        // dragging related
+        if (!disable_drag)
         {
-            if (pge->GetMouse(0).bPressed)
+            if ((pge->GetMousePos().x >= position.x && pge->GetMousePos().x <= position.x + size.x - (size.x / 10) &&
+                pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + top_border_thickness) || is_dragging)
             {
-                is_dragging = true;
-                mouse_difference = pge->GetMousePos() - position;
+                if (pge->GetMouse(0).bPressed)
+                {
+                    is_dragging = true;
+                    mouse_difference = pge->GetMousePos() - position;
+                }
+
+                if (pge->GetMouse(0).bHeld && is_dragging && focused)
+                    new_window_position = pge->GetMousePos() - mouse_difference;
+
+
+                position = new_window_position;
             }
 
-            if (pge->GetMouse(0).bHeld && is_dragging && focused)
-                new_window_position = pge->GetMousePos() - mouse_difference;
-
-
-            position = new_window_position;
+            if (pge->GetMouse(0).bReleased)
+                is_dragging = false;
         }
-
-        if (pge->GetMouse(0).bReleased)
-            is_dragging = false;
-
+        // focusing system related
         if (overlapping_window)
         {
             if (!((pge->GetMousePos().x >= overlapping_window->get_position().x && pge->GetMousePos().x <= overlapping_window->get_position().x + overlapping_window->get_size().x &&
@@ -1560,9 +1569,9 @@ namespace olc
         // left outline
         pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.groupbox_outline);
         // right outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x, absolute_position.y), olc::vi2d(1, size.y), color_scheme.groupbox_outline);
+        pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x - 1, absolute_position.y), olc::vf2d(1, size.y), color_scheme.groupbox_outline);
         // bottom outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.groupbox_outline);
+        pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y - 1), olc::vf2d(size.x + 1, 1), color_scheme.groupbox_outline);
 
         pge->DrawStringPropDecal(olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2), absolute_position.y - (text_size.y / 2)), text, text_color);
 
