@@ -69,9 +69,10 @@ public:
         
         if (GetKey(olc::ESCAPE).bPressed)
             return false;
+#ifndef STANDALONE
         if (GetKey(olc::SHIFT).bPressed)
             frost_ui.find_window("main_window")->close_window(false);
-        
+#endif
         frost_ui.run();
         
 
@@ -87,7 +88,7 @@ int main()
     if (demo.Construct(250, 170, 1, 1))
         demo.Start();
 #else
-    if (demo.Construct(230, 135, 2, 2))
+    if (demo.Construct(230, 135, 2, 2, false, true))
         demo.Start();
 #endif
     return 0;
