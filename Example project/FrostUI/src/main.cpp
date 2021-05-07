@@ -28,8 +28,9 @@ public:
 
         frost_ui.set_active_window("main_window");
         frost_ui.add_groupbox("groupbox2", "", { 5, 5 }, { 230, 135 });
-#endif
+#else
         frost_ui.add_groupbox("groupbox2", "", { 0, 0 }, { 230, 135 });
+#endif
         auto groupbox_pos = frost_ui.find_groupbox("groupbox2")->get_position();
 
         frost_ui.add_inputfield("input_username", "Username: ", { groupbox_pos.x + 70, groupbox_pos.y + 20 }, { 150, 20 });
