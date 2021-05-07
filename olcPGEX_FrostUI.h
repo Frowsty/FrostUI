@@ -139,7 +139,7 @@ namespace olc
         button_state state = button_state::NORMAL;
 
         bool is_dragging = false;
-        bool disable_drag = true;
+        bool disable_drag = false;
 
         bool focused = false;
 

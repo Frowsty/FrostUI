@@ -5,7 +5,7 @@
 #include "headers/olcPixelGameEngine.h"
 #include "headers/olcPGEX_FrostUI.h"
 
-#define STANDALONE
+//#define STANDALONE
 
 class Example : public olc::PixelGameEngine
 {
@@ -24,7 +24,7 @@ public:
 #ifndef STANDALONE
         auto main_window = frost_ui.create_window("main_window", "Login window", { 0, 0 }, { 250, 170 });
 
-        main_window->disable_dragging(true);
+        //main_window->disable_dragging(true);
 
         frost_ui.set_active_window("main_window");
         frost_ui.add_groupbox("groupbox2", "", { 5, 5 }, { 230, 135 });
@@ -86,7 +86,7 @@ int main()
 {
     Example demo;
 #ifndef STANDALONE
-    if (demo.Construct(250, 170, 1, 1))
+    if (demo.Construct(400, 300, 1, 1))
         demo.Start();
 #else
     if (demo.Construct(230, 135, 2, 2, false, true))
