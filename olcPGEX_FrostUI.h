@@ -445,9 +445,9 @@ namespace olc
     {
     private:
         std::deque<FUI_Window*> windows;
-        std::vector<std::string> groups;
+        std::vector<std::pair<std::string, std::string>> groups;
         std::string active_window_id;
-        std::string active_group;
+        std::pair<std::string, std::string> active_group;
         std::deque<std::shared_ptr<FUI_Element>> elements;
         std::deque<std::shared_ptr<FUI_Element>> groupboxes;
         std::pair<bool, std::shared_ptr<FUI_Element>> trigger_pushback = std::make_pair(false, nullptr);
@@ -463,7 +463,7 @@ namespace olc
 
         FUI_Window* create_window(const std::string& identifier, const std::string& title, olc::vi2d position, olc::vi2d size);
 
-        void add_group(const std::string& g);
+        void add_group(const std::string& window_id, const std::string& g);
 
         void clear_active_window();
 
@@ -1990,15 +1990,19 @@ namespace olc
     {
         for (auto group : groups)
         {
-            if (group == g)
+            if (group.second == g)
             {
-                active_group = g;
+                active_group.first = group.first;
+                active_group.second = group.second;
                 break;
             }
             else
-                active_group.clear();
+            {
+                active_group.first.clear();
+                active_group.second.clear();
+            }
         }
-        if (active_group.empty())
+        if (active_group.first.empty() && active_group.second.empty())
             std::cout << "Could not find the group ID in added windows (function affected: set_active_group, affected window_id: " + g + ")\n";
     }
 
@@ -2025,25 +2029,35 @@ namespace olc
         return temp_window;
     }
 
-    void FrostUI::add_group(const std::string& g)
+    void FrostUI::add_group(const std::string& window_id, const std::string& group_id)
     {
         bool is_duplicate = false;
         for (auto group : groups)
         {
-            if (group == g)
+            if (group.second == group_id)
                 is_duplicate = true;
         }
         if (!is_duplicate)
-            groups.push_back(g);
+            groups.push_back(std::make_pair(window_id, group_id));
         else
-            std::cout << "Cannot add duplicates of same group (function affected: add_group, affected group_id: " + g + ")\n";
+            std::cout << "Cannot add duplicates of same group (function affected: add_group, affected group_id: " + group_id + ")\n";
     }
 
-    void FrostUI::clear_active_window() { active_window_id.clear(); }
+    void FrostUI::clear_active_window() 
+    { 
+        active_window_id.clear();
+    }
 
-    void FrostUI::clear_active_group() { active_group.clear(); }
+    void FrostUI::clear_active_group() 
+    { 
+        active_group.first.clear();
+        active_group.second.clear();
+    }
 
-    const std::string& FrostUI::get_active_group() { return active_group; }
+    const std::string& FrostUI::get_active_group() 
+    { 
+        return active_group.second;
+    }
 
     FUI_Window* FrostUI::find_window(const std::string& identifier)
     {
@@ -2101,10 +2115,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             elements.push_back(std::make_shared<FUI_Label>(identifier, window, text, position));
                         else
-                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group, text, position));
+                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group.second, text, position));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_label, label_id affected: " + identifier + ")\n";
                 }
@@ -2125,15 +2139,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group, text, position));
+                        if (!active_group.second.empty())
+                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group.second, text, position));
                         else
                             elements.push_back(std::make_shared<FUI_Label>(identifier, window, text, position));
                 }
             }
             else
-                if (!active_group.empty())
-                    elements.push_back(std::make_shared<FUI_Label>(identifier, active_group, text, position));
+                if (!active_group.second.empty())
+                    elements.push_back(std::make_shared<FUI_Label>(identifier, active_group.second, text, position));
                 else
                     elements.push_back(std::make_shared<FUI_Label>(identifier, text, position));
         }
@@ -2150,10 +2164,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
                         else
-                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state));
+                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
                 }
@@ -2174,15 +2188,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group, text, position, size, cb_state));
+                        if (!active_group.second.empty())
+                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
                         else
                             elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
                 }
             }
             else
-                if (!active_group.empty())
-                    elements.push_front(std::make_shared<FUI_Checkbox>(identifier, active_group, text, position, size, cb_state));
+                if (!active_group.second.empty())
+                    elements.push_front(std::make_shared<FUI_Checkbox>(identifier, active_group.second, text, position, size, cb_state));
                 else
                     elements.push_front(std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state));
         }
@@ -2199,10 +2213,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size));
+                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
                 }
@@ -2223,15 +2237,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group, text, position, size));
+                        if (!active_group.second.empty())
+                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group.second, text, position, size));
                         else
                             elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
                 }
             }
             else
-                if (!active_group.empty())
-                    elements.push_back(std::make_shared<FUI_Dropdown>(identifier, active_group, text, position, size));
+                if (!active_group.second.empty())
+                    elements.push_back(std::make_shared<FUI_Dropdown>(identifier, active_group.second, text, position, size));
                 else
                     elements.push_back(std::make_shared<FUI_Dropdown>(identifier, text, position, size));
         }
@@ -2248,10 +2262,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size));
+                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
                 }
@@ -2272,15 +2286,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group, text, position, size));
+                        if (!active_group.second.empty())
+                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group.second, text, position, size));
                         else
                             elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
                 }
             }
             else
-                if (!active_group.empty())
-                    elements.push_back(std::make_shared<FUI_Combolist>(identifier, active_group, text, position, size));
+                if (!active_group.second.empty())
+                    elements.push_back(std::make_shared<FUI_Combolist>(identifier, active_group.second, text, position, size));
                 else
                     elements.push_back(std::make_shared<FUI_Combolist>(identifier, text, position, size));
         }
@@ -2297,10 +2311,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
                         else
-                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size));
+                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
                 }
@@ -2321,15 +2335,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group, text, position, size));
+                        if (!active_group.second.empty())
+                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group.second, text, position, size));
                         else
                             groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
                 }
             }
             else
-                if (!active_group.empty())
-                    groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, active_group, text, position, size));
+                if (!active_group.second.empty())
+                    groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, active_group.second, text, position, size));
                 else
                     groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, text, position, size));
         }
@@ -2346,10 +2360,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
                 }
@@ -2370,15 +2384,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group, text, position, size, range, value_holder));
+                        if (!active_group.second.empty())
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
                         else
                             elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
                 }
             }
             else
-                if (!active_group.empty())
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group, text, position, size, range, value_holder));
+                if (!active_group.second.empty())
+                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder));
                 else
                     elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder));
         }
@@ -2395,10 +2409,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             elements.push_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                         else
-                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback));
+                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
                 }
@@ -2419,15 +2433,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group, text, position, size, callback));
+                        if (!active_group.second.empty())
+                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
                         else
                             elements.push_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                 }
             }
             else
-                if (!active_group.empty())
-                    elements.push_front(std::make_shared<FUI_Button>(identifier, active_group, text, position, size, callback));
+                if (!active_group.second.empty())
+                    elements.push_front(std::make_shared<FUI_Button>(identifier, active_group.second, text, position, size, callback));
                 else
                     elements.push_front(std::make_shared<FUI_Button>(identifier, text, position, size, callback));
         }
@@ -2444,10 +2458,10 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
-                        if (!active_group.empty())
+                        if (!active_group.second.empty())
                             elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group, text, position, size));
+                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
                 }
@@ -2468,15 +2482,15 @@ namespace olc
                 for (auto& window : windows)
                 {
                     if (window->get_id() == active_window_id)
-                        if (!active_group.empty())
-                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group, text, position, size));
+                        if (!active_group.second.empty())
+                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group.second, text, position, size));
                         else
                             elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
                 }
             }
             else
-                if (!active_group.empty())
-                    elements.push_back(std::make_shared<FUI_Inputfield>(identifier, active_group, text, position, size));
+                if (!active_group.second.empty())
+                    elements.push_back(std::make_shared<FUI_Inputfield>(identifier, active_group.second, text, position, size));
                 else
                     elements.push_back(std::make_shared<FUI_Inputfield>(identifier, text, position, size));
         }
@@ -2493,9 +2507,12 @@ namespace olc
             if (!g)
                 continue;
             if (!g->get_group().empty())
-                if (!active_group.empty())
-                    if (g->get_group() != active_group || g->get_group().empty())
-                        continue;
+                if (!active_group.second.empty())
+                    if (!g->parent && active_group.first.size() < 1)
+                        if (g->get_group() != active_group.second || g->get_group().empty())
+                            continue;
+            if (!g->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
+                continue;
             if (!g->parent)
                 g->draw(pge);
         }
@@ -2505,9 +2522,12 @@ namespace olc
             if (!e)
                 continue;
             if (!e->get_group().empty())
-                if (!active_group.empty())
-                    if (e->get_group() != active_group || e->get_group().empty())
-                        continue;
+                if (!active_group.second.empty())
+                    if (!e->parent && active_group.first.size() < 1)
+                        if (e->get_group() != active_group.second || e->get_group().empty())
+                            continue;
+            if (!e->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
+                continue;
             if (!e->parent)
             {
                 e->draw(pge);
@@ -2550,9 +2570,12 @@ namespace olc
                     if (!g)
                         continue;
                     if (!g->get_group().empty())
-                        if (!active_group.empty())
-                            if (g->get_group() != active_group || g->get_group().empty())
-                                continue;
+                        if (!active_group.second.empty())
+                            if (g->parent && g->parent->get_id() == active_group.first)
+                                if (g->get_group() != active_group.second || g->get_group().empty())
+                                    continue;
+                    if (!g->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
+                        continue;
                     if (g->parent && g->parent->get_id() == window->get_id())
                         g->draw(pge);
                 }
@@ -2563,9 +2586,12 @@ namespace olc
                     if (!e)
                         continue;
                     if (!e->get_group().empty())
-                        if (!active_group.empty())
-                            if (e->get_group() != active_group || e->get_group().empty())
-                                continue;
+                        if (!active_group.second.empty())
+                            if (e->parent && e->parent->get_id() == active_group.first)
+                                if (e->get_group() != active_group.second || e->get_group().empty())
+                                    continue;
+                    if (!e->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
+                        continue;
                     if (e->is_focused)
                     {
                         trigger_pushback.first = true;
