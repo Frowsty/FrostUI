@@ -209,8 +209,10 @@ namespace olc
 
         FUI_Colors color_scheme;
 
-        float slider_value = 0.f;
-        float* slier_value_holder = nullptr;
+        float slider_value_float = 0.f;
+        int slider_value_int = 0;
+        float* slider_value_holder_float = nullptr;
+        int* slider_value_holder_int = nullptr;
         olc::vf2d range;
 
         bool* toggle_button_state = nullptr;
@@ -375,6 +377,12 @@ namespace olc
 
     class FUI_Slider : public FUI_Element
     {
+    public:
+        enum class type
+        {
+            FLOAT = 0,
+            INT
+        };
     private:
         enum class State
         {
@@ -385,13 +393,22 @@ namespace olc
         float ratio = 0.f;
         State state = State::NONE;
 
+        type slider_type;
+
         std::string to_string_with_precision(const float a_value, const int n);
 
     public:
-        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
-        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
-        FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
-        FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+        // float sliders
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
+
+        // int sliders
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
 
         void draw(olc::PixelGameEngine* pge) override;
 
@@ -494,9 +511,13 @@ namespace olc
 
         void add_groupbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
-        void add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+        void add_float_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
 
-        void add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+        void add_float_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+
+        void add_int_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder);
+
+        void add_int_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder);
 
         void add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
 
@@ -1582,7 +1603,7 @@ namespace olc
     #               FUI_SLIDER START                   #
     ####################################################
     */
-    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -1590,22 +1611,24 @@ namespace olc
         parent = pt;
         position = p;
         range = r;
-        slier_value_holder = vh;
+        slider_value_holder_float = vh;
+        slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
         size = s;
         position = p;
         range = r;
-        slier_value_holder = vh;
+        slider_value_holder_float = vh;
+        slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -1614,11 +1637,12 @@ namespace olc
         position = p;
         group = g;
         range = r;
-        slier_value_holder = vh;
+        slider_value_holder_float = vh;
+        slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh)
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -1626,7 +1650,62 @@ namespace olc
         position = p;
         group = g;
         range = r;
-        slier_value_holder = vh;
+        slider_value_holder_float = vh;
+        slider_type = s_type;
+        ui_type = FUI_Type::SLIDER;
+    }
+
+    //////
+
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    {
+        identifier = id;
+        text = t;
+        size = s;
+        parent = pt;
+        position = p;
+        range = r;
+        slider_value_holder_int = vh;
+        slider_type = s_type;
+        ui_type = FUI_Type::SLIDER;
+    }
+
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    {
+        identifier = id;
+        text = t;
+        size = s;
+        position = p;
+        range = r;
+        slider_value_holder_int = vh;
+        slider_type = s_type;
+        ui_type = FUI_Type::SLIDER;
+    }
+
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    {
+        identifier = id;
+        text = t;
+        size = s;
+        parent = pt;
+        position = p;
+        group = g;
+        range = r;
+        slider_value_holder_int = vh;
+        slider_type = s_type;
+        ui_type = FUI_Type::SLIDER;
+    }
+
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    {
+        identifier = id;
+        text = t;
+        size = s;
+        position = p;
+        group = g;
+        range = r;
+        slider_value_holder_int = vh;
+        slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
@@ -1649,12 +1728,31 @@ namespace olc
         auto absolute_position = position + adaptive_position;
 
         // draw title with slider value
-        std::string temp_text = text + " [" + to_string_with_precision(slider_value, 2) + "] ";
+        std::string temp_text;
+
+        switch (slider_type)
+        {
+        case type::FLOAT:
+            temp_text = text + " [" + to_string_with_precision(slider_value_float, 2) + "] ";
+            break:
+        case type::INT:
+            temp_text = text + " [" + to_string(slider_value_int) + "] ";
+            break;
+        }
+
         auto text_size = pge->GetTextSizeProp(temp_text) * text_scale;
         pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2)), temp_text, text_color);
 
-        if (ratio == 0.0f)
-            ratio = slider_value / range.y;
+        switch (slider_type)
+        {
+        case type::FLOAT:
+            if (ratio == 0.0f)
+                ratio = slider_value_float / range.y;
+            break;
+        case type::INT:
+            if (ratio == 0.0f)
+                ratio = int(slider_value_int / range.y);
+        }
 
         // draw slider body
         switch (state)
@@ -1705,8 +1803,18 @@ namespace olc
                 slider_delta = size.x;
 
             ratio = (slider_delta / size.x);
-            slider_value = range.x + (range.y - range.x) * ratio;
-            *slier_value_holder = slider_value;
+
+            switch (slider_type)
+            {
+            case type::FLOAT:
+                slider_value_float = range.x + (range.y - range.x) * ratio;
+                *slier_value_holder_float = slider_value_float;
+                break;
+            case type::INT:
+                slider_value_int = range.x + (range.y - range.x) * ratio;
+                *slier_value_holder_int = slider_value_int;
+                break;
+            }
         }
     }
 
@@ -2385,6 +2493,55 @@ namespace olc
     }
 
     void FrostUI::add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+    {
+        if (!find_element(identifier))
+        {
+            if (!active_window_id.empty())
+            {
+                for (auto& window : windows)
+                {
+                    if (window->get_id() == active_window_id)
+                        if (!active_group.second.empty())
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
+                        else
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
+                }
+            }
+            else
+                if (!active_group.second.empty())
+                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder));
+                else
+                    elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder));
+        }
+        else
+            std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+    }
+
+    void FrostUI::add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
+    {
+        if (!find_element(identifier))
+        {
+            if (windows.size() > 0)
+            {
+                for (auto& window : windows)
+                {
+                    if (window->get_id() == parent_id)
+                        if (!active_group.second.empty())
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
+                        else
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
+                    else
+                        std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+                }
+            }
+            else
+                std::cout << "There's no windows to be used as parent (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+        }
+        else
+            std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+    }
+
+    void FrostUI::add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
     {
         if (!find_element(identifier))
         {

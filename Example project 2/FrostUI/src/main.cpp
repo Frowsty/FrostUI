@@ -4,7 +4,6 @@
 #include "headers/olcPixelGameEngine.h"
 #include "headers/gui.h"
 
-//#define STANDALONE
 
 class Example : public olc::PixelGameEngine
 {
@@ -18,7 +17,7 @@ public:
 public:
     bool OnUserCreate() override
     {
-        
+        gui.create();
         return true;
     }
 
@@ -29,6 +28,8 @@ public:
         if (GetKey(olc::ESCAPE).bPressed)
             return false;
         
+        gui.run();
+
         return true;
     }
 };
@@ -38,7 +39,7 @@ int main()
 {
     Example demo;
 
-    if (demo.Construct(720, 560, 1, 1))
+    if (demo.Construct(500, 300, 1, 1))
         demo.Start();
 
     return 0;
