@@ -209,6 +209,14 @@ namespace olc
 
         FUI_Colors color_scheme;
 
+
+        enum class type
+        {
+            FLOAT = 0,
+            INT
+        };
+
+        type slider_type;
         float slider_value_float = 0.f;
         int slider_value_int = 0;
         float* slider_value_holder_float = nullptr;
@@ -262,6 +270,8 @@ namespace olc
         const olc::vi2d get_position() const;
 
         void set_slider_value(float value);
+
+        void set_slider_value(int value);
 
         const float get_slider_value() const;
 
@@ -377,12 +387,6 @@ namespace olc
 
     class FUI_Slider : public FUI_Element
     {
-    public:
-        enum class type
-        {
-            FLOAT = 0,
-            INT
-        };
     private:
         enum class State
         {
@@ -392,8 +396,6 @@ namespace olc
         };
         float ratio = 0.f;
         State state = State::NONE;
-
-        type slider_type;
 
         std::string to_string_with_precision(const float a_value, const int n);
 
@@ -720,72 +722,72 @@ namespace olc
     #               FUI_ELEMENT START                  #
     ####################################################
     */
-    void FUI_Element::set_size(olc::vi2d s) 
+    void FUI_Element::set_size(olc::vi2d s)
     {
-        size = s; 
+        size = s;
     }
 
-    void FUI_Element::set_position(olc::vi2d p) 
-    { 
+    void FUI_Element::set_position(olc::vi2d p)
+    {
         position = p;
     }
 
-    void FUI_Element::set_text(const std::string& txt) 
-    { 
+    void FUI_Element::set_text(const std::string& txt)
+    {
         text = txt;
     }
 
-    void FUI_Element::set_text_color(olc::Pixel color) 
-    { 
+    void FUI_Element::set_text_color(olc::Pixel color)
+    {
         text_color = color;
     }
 
-    std::string FUI_Element::get_group() const 
-    { 
+    std::string FUI_Element::get_group() const
+    {
         return group;
     }
 
-    void FUI_Element::scale_text(olc::vf2d scale) 
-    { 
+    void FUI_Element::scale_text(olc::vf2d scale)
+    {
         text_scale = scale;
     }
 
-    void FUI_Element::inputfield_scale(olc::vf2d scale) 
-    { 
+    void FUI_Element::inputfield_scale(olc::vf2d scale)
+    {
         if (ui_type == FUI_Type::INPUTFIELD)
             input_scale = scale;
         else
             std::cout << "Trying to use inputfield_scale on incorrect UI_TYPE\n";
     }
 
-    void FUI_Element::make_toggleable(bool* state) 
-    { 
-        if (ui_type == FUI_Type::BUTTON) 
-            toggle_button_state = state; 
-        else 
+    void FUI_Element::make_toggleable(bool* state)
+    {
+        if (ui_type == FUI_Type::BUTTON)
+            toggle_button_state = state;
+        else
             std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n";
     }
 
-    void FUI_Element::add_item(const std::string& item, olc::vf2d scale = { 1.0f, 1.0f }) 
-    { 
+    void FUI_Element::add_item(const std::string& item, olc::vf2d scale = { 1.0f, 1.0f })
+    {
         if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)
             elements.push_back(std::make_pair(DropdownState::NONE, std::make_pair(scale, item)));
-        else 
+        else
             std::cout << "Trying to add_item to wrong UI_TYPE\n";
     }
 
-    void FUI_Element::set_animation_speed(float speed) 
-    { 
-        if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST) 
+    void FUI_Element::set_animation_speed(float speed)
+    {
+        if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)
             animation_speed = speed;
         else
             std::cout << "Trying to set animation speed on wrong UI_TYPE\n";
     }
 
-    std::string FUI_Element::get_selected_item() 
-    { 
-        if (ui_type == FUI_Type::DROPDOWN) 
-            return selected_element.second; 
+    std::string FUI_Element::get_selected_item()
+    {
+        if (ui_type == FUI_Type::DROPDOWN)
+            return selected_element.second;
         else std::cout << "Trying to set animation speed on wrong UI_TYPE\n";
     }
 
@@ -799,41 +801,63 @@ namespace olc
 
             return return_selected_items;
         }
-        else 
+        else
             std::cout << "Trying to retrieve selected items on wrong UI_TYPE\n";
     }
 
-    const olc::vi2d FUI_Element::get_position() const 
-    { 
+    const olc::vi2d FUI_Element::get_position() const
+    {
         return position;
     }
 
-    void FUI_Element::set_slider_value(float value) 
-    { 
-        if (ui_type == FUI_Type::SLIDER) 
-            slider_value = value;
+    void FUI_Element::set_slider_value(float value)
+    {
+        if (ui_type == FUI_Type::SLIDER)
+        {
+            slider_value_float = value;
+            *slider_value_holder_float = value;
+        }
         else
             std::cout << "Trying to set_slider_value on wrong UI_TYPE\n";
     }
 
-    const float FUI_Element::get_slider_value() const 
-    { 
-        if (ui_type == FUI_Type::SLIDER) 
-            return slider_value;
+    void FUI_Element::set_slider_value(int value)
+    {
+        if (ui_type == FUI_Type::SLIDER)
+        {
+            slider_value_int = value;
+            *slider_value_holder_int = value;
+        }
+        else
+            std::cout << "Trying to set_slider_value on wrong UI_TYPE\n";
+    }
+
+    const float FUI_Element::get_slider_value() const
+    {
+        if (ui_type == FUI_Type::SLIDER)
+        {
+            switch (slider_type)
+            {
+            case type::FLOAT:
+                return slider_value_float;
+            case type::INT:
+                return slider_value_int;
+            }
+        }
         else
             std::cout << "Trying to get_slider_value on wrong UI_TYPE\n";
     }
 
-    const std::string FUI_Element::get_inputfield_value() const 
-    { 
-        if (ui_type == FUI_Type::INPUTFIELD) 
+    const std::string FUI_Element::get_inputfield_value() const
+    {
+        if (ui_type == FUI_Type::INPUTFIELD)
             return inputfield_text;
         else
             std::cout << "Trying to get_inputfield_value on wrong UI_TYPE\n";
     }
 
-    olc::vi2d FUI_Element::get_text_size(olc::PixelGameEngine* pge) 
-    { 
+    olc::vi2d FUI_Element::get_text_size(olc::PixelGameEngine* pge)
+    {
         return pge->GetTextSizeProp(text) * text_scale;
     }
 
@@ -1734,9 +1758,9 @@ namespace olc
         {
         case type::FLOAT:
             temp_text = text + " [" + to_string_with_precision(slider_value_float, 2) + "] ";
-            break:
+            break;
         case type::INT:
-            temp_text = text + " [" + to_string(slider_value_int) + "] ";
+            temp_text = text + " [" + std::to_string(slider_value_int) + "] ";
             break;
         }
 
@@ -1751,7 +1775,7 @@ namespace olc
             break;
         case type::INT:
             if (ratio == 0.0f)
-                ratio = int(slider_value_int / range.y);
+                ratio = slider_value_int / range.y;
         }
 
         // draw slider body
@@ -1808,11 +1832,11 @@ namespace olc
             {
             case type::FLOAT:
                 slider_value_float = range.x + (range.y - range.x) * ratio;
-                *slier_value_holder_float = slider_value_float;
+                *slider_value_holder_float = slider_value_float;
                 break;
             case type::INT:
                 slider_value_int = range.x + (range.y - range.x) * ratio;
-                *slier_value_holder_int = slider_value_int;
+                *slider_value_holder_int = slider_value_int;
                 break;
             }
         }
@@ -2160,19 +2184,19 @@ namespace olc
             std::cout << "Cannot add duplicates of same group (function affected: add_group, affected group_id: " + group_id + ")\n";
     }
 
-    void FrostUI::clear_active_window() 
-    { 
+    void FrostUI::clear_active_window()
+    {
         active_window_id.clear();
     }
 
-    void FrostUI::clear_active_group() 
-    { 
+    void FrostUI::clear_active_group()
+    {
         active_group.first.clear();
         active_group.second.clear();
     }
 
-    const std::string& FrostUI::get_active_group() 
-    { 
+    const std::string& FrostUI::get_active_group()
+    {
         return active_group.second;
     }
 
@@ -2468,7 +2492,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+    void FrostUI::add_float_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
     {
         if (!find_element(identifier))
         {
@@ -2478,9 +2502,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
                 }
@@ -2492,7 +2516,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+    void FrostUI::add_float_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
     {
         if (!find_element(identifier))
         {
@@ -2502,22 +2526,22 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder));
+                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                 else
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder));
+                    elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
+    void FrostUI::add_int_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
     {
         if (!find_element(identifier))
         {
@@ -2527,9 +2551,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
                 }
@@ -2541,7 +2565,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
+    void FrostUI::add_int_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
     {
         if (!find_element(identifier))
         {
@@ -2551,16 +2575,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder));
+                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder));
+                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
                 else
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder));
+                    elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::INT));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
