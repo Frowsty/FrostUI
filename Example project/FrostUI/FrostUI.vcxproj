@@ -127,9 +127,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\gui.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\headers\gui.h" />
     <ClInclude Include="src\headers\olcPGEX_FrostUI.h" />
     <ClInclude Include="src\headers\olcPixelGameEngine.h" />
   </ItemGroup>

@@ -4,8 +4,6 @@
 #include "headers/olcPixelGameEngine.h"
 #include "headers/gui.h"
 
-//#define STANDALONE
-
 class Example : public olc::PixelGameEngine
 {
 public:
@@ -18,17 +16,19 @@ public:
 public:
     bool OnUserCreate() override
     {
-        
+        gui.create();
         return true;
     }
 
     bool OnUserUpdate(float fElapsedTime) override
     {
         Clear(olc::BLACK);
-        
+
         if (GetKey(olc::ESCAPE).bPressed)
             return false;
         
+        gui.run();
+
         return true;
     }
 };
