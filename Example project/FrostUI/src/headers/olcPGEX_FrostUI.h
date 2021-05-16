@@ -789,6 +789,8 @@ namespace olc
         if (ui_type == FUI_Type::DROPDOWN)
             return selected_element.second;
         else std::cout << "Trying to set animation speed on wrong UI_TYPE\n";
+
+        return "";
     }
 
     std::vector<std::string> FUI_Element::get_selected_items()
@@ -803,6 +805,8 @@ namespace olc
         }
         else
             std::cout << "Trying to retrieve selected items on wrong UI_TYPE\n";
+
+        return return_selected_items;
     }
 
     const olc::vi2d FUI_Element::get_position() const
@@ -846,6 +850,8 @@ namespace olc
         }
         else
             std::cout << "Trying to get_slider_value on wrong UI_TYPE\n";
+
+        return 0.0f;
     }
 
     const std::string FUI_Element::get_inputfield_value() const
@@ -854,6 +860,8 @@ namespace olc
             return inputfield_text;
         else
             std::cout << "Trying to get_inputfield_value on wrong UI_TYPE\n";
+
+        return "";
     }
 
     olc::vi2d FUI_Element::get_text_size(olc::PixelGameEngine* pge)
