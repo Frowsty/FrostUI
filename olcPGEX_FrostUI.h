@@ -474,6 +474,8 @@ namespace olc
         std::deque<std::shared_ptr<FUI_Element>> groupboxes;
         std::pair<bool, std::shared_ptr<FUI_Element>> trigger_pushback = std::make_pair(false, nullptr);
 
+        void cycle_inputfield();
+
         void push_focused_to_back();
 
         void push_focused_element_to_back();
@@ -2031,15 +2033,15 @@ namespace olc
             pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
         {
             if (pge->GetMouse(0).bPressed)
-                state = State::ACTIVE;
+                is_focused = true;
         }
-        else if (pge->GetMouse(0).bPressed && state == State::ACTIVE)
-            state = State::NONE;
+        else if (pge->GetMouse(0).bPressed && is_focused)
+            is_focused = false;
 
         if (pge->GetKey(olc::ENTER).bPressed || pge->GetKey(olc::ESCAPE).bPressed)
-            state = State::NONE;
+            is_focused = false;
 
-        if (state == State::ACTIVE)
+        if (is_focused)
         {
             if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::A).bPressed)
                 select_all = true;
@@ -2071,6 +2073,11 @@ namespace olc
             if (!pge->GetKey(olc::CTRL).bHeld)
                 inputfield_text.append(get_char_from_id(pge));
         }
+
+        if (is_focused)
+            state = State::ACTIVE;
+        else
+            state = State::NONE;
     }
 
     /*
@@ -2078,6 +2085,30 @@ namespace olc
     #               FUI_HANDLER START                  #
     ####################################################
     */
+    void FrostUI::cycle_inputfield()
+    {
+        if (pge->GetKey(olc::TAB).bPressed)
+        {
+            int i = 0;
+            int j = 0;
+            for (auto& element : elements)
+            {
+                if (element->is_focused && element->ui_type == FUI_Type::INPUTFIELD)
+                {
+                    element->is_focused = false;
+                    break;
+                }
+                i++;
+            }
+            for (auto& element : elements)
+            {
+                if (element->ui_type == FUI_Type::INPUTFIELD && j < i)
+                    element->is_focused = true;
+                j++;
+            }
+        }
+    }
+
     void FrostUI::push_focused_to_back()
     {
         int i = 0;
@@ -2724,6 +2755,8 @@ namespace olc
                 e->input(pge);
             }
         }
+
+        cycle_inputfield();
 
         // arrange the deques containing the windows
         push_focused_to_back();
