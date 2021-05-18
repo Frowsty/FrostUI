@@ -473,6 +473,15 @@ namespace olc
         std::deque<std::shared_ptr<FUI_Element>> elements;
         std::deque<std::shared_ptr<FUI_Element>> groupboxes;
         std::pair<bool, std::shared_ptr<FUI_Element>> trigger_pushback = std::make_pair(false, nullptr);
+        
+        std::string current_focused_window;
+        std::string saved_focused_window;
+
+        bool prime_window_focusing = true;
+
+        bool is_a_window_focused();
+
+        bool disable_window_input_if_open_dropdown(int window_index);
 
         void cycle_inputfield();
 
@@ -1311,8 +1320,8 @@ namespace olc
             {
                 if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
                     pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
-                    pge->GetMousePos().y >= adaptive_position.y + position.y + (size.y * i) &&
-                    pge->GetMousePos().y <= adaptive_position.y + position.y + (size.y * i) + size.y)
+                    pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
+                    pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
                 {
                     if (pge->GetMouse(0).bPressed)
                     {
@@ -1505,8 +1514,8 @@ namespace olc
             {
                 if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
                     pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
-                    pge->GetMousePos().y >= adaptive_position.y + position.y + (size.y * i) &&
-                    pge->GetMousePos().y <= adaptive_position.y + position.y + (size.y * i) + size.y)
+                    pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
+                    pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
                 {
                     if (pge->GetMouse(0).bPressed)
                     {
@@ -2030,7 +2039,10 @@ namespace olc
             cursor_position.x -= (cursor_position.x + (pge->GetTextSizeProp("_").x * input_scale.x)) - (absolute_position.x + size.x);
 
         if (state == State::ACTIVE)
+        {
+            //std::cout << "Drawing cursor: " + identifier << "\n";
             pge->FillRectDecal(cursor_position, { pge->GetTextSizeProp("_").x * input_scale.x, 1 }, color_scheme.inputfield_cursor);
+        }
     }
 
     void FUI_Inputfield::input(olc::PixelGameEngine* pge)
@@ -2093,25 +2105,63 @@ namespace olc
     #               FUI_HANDLER START                  #
     ####################################################
     */
+    bool FrostUI::is_a_window_focused()
+    {
+        for (auto& window : windows)
+        {
+            if (window->is_focused())
+                return true;
+        }
+        return false;
+    }
+
+    bool FrostUI::disable_window_input_if_open_dropdown(int window_index)
+    {
+        for (auto element : elements)
+        {
+            if (windows[window_index]->get_id() != element->parent->get_id())
+                continue;
+            if (element->ui_type == FUI_Type::DROPDOWN || element->ui_type == FUI_Type::COMBOLIST)
+            {
+                auto adaptive = element->adaptive_position;
+                auto size = element->size;
+                auto position = element->position;
+                auto amount = element->elements.size();
+                if (element->is_focused && (pge->GetMousePos().x >= adaptive.x + position.x &&
+                    pge->GetMousePos().x <= adaptive.x + position.x + size.x &&
+                    pge->GetMousePos().y >= adaptive.y + position.y &&
+                    pge->GetMousePos().y <= adaptive.y + position.y + (size.y * amount) + size.y))
+                    return true;
+            }
+                    
+        }
+        return false;
+    }
+
     void FrostUI::cycle_inputfield()
     {
         if (pge->GetKey(olc::TAB).bPressed)
         {
             int i = 0;
             int j = 0;
+            bool input_was_focused = false;
             for (auto& element : elements)
             {
                 if (element->is_focused && element->ui_type == FUI_Type::INPUTFIELD)
                 {
                     element->is_focused = false;
+                    input_was_focused = true;
                     break;
                 }
                 i++;
             }
             for (auto& element : elements)
             {
-                if (element->ui_type == FUI_Type::INPUTFIELD && j < i)
+                if (element->ui_type == FUI_Type::INPUTFIELD && j > i && input_was_focused)
+                {
                     element->is_focused = true;
+                    break;
+                }
                 j++;
             }
         }
@@ -2130,6 +2180,7 @@ namespace olc
             if (window->is_focused())
             {
                 windows.push_back(window);
+                std::cout << "we did an eraser thingy " << windows[i]->get_id() + "\n";
                 windows.erase(windows.begin() + i);
             }
             i++;
@@ -2729,8 +2780,9 @@ namespace olc
 
     void FrostUI::run()
     {
+        // Cycle the inputfields before anything is drawn
+        cycle_inputfield();
         // Draw standalone elements first (standalone elements are elements without a parent / window)
-
         for (auto& g : groupboxes)
         {
             if (!g)
@@ -2764,10 +2816,12 @@ namespace olc
             }
         }
 
-        cycle_inputfield();
-
-        // arrange the deques containing the windows
-        push_focused_to_back();
+        // run this only once to prime the window focusing system
+        if (prime_window_focusing)
+        {
+            push_focused_to_back();
+            prime_window_focusing = false;
+        }
 
         if (trigger_pushback.first)
         {
@@ -2783,7 +2837,10 @@ namespace olc
             for (int i = windows.size() - 1; i >= 0; i--)
             {
                 if (!windows[i]->get_closed_state())
-                    windows[i]->input(windows);
+                {
+                    if (!disable_window_input_if_open_dropdown(i))
+                        windows[i]->input(windows);
+                }
             }
 
             for (auto& window : windows)
@@ -2794,6 +2851,9 @@ namespace olc
                         window->set_focused(false);
                     continue;
                 }
+
+                if (window->is_focused())
+                    current_focused_window = window->get_id();
 
                 window->draw();
                 for (auto& g : groupboxes)
@@ -2823,7 +2883,7 @@ namespace olc
                                     continue;
                     if (!e->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
                         continue;
-                    if (e->is_focused)
+                    if (e->is_focused && e->ui_type != FUI_Type::INPUTFIELD)
                     {
                         trigger_pushback.first = true;
                         trigger_pushback.second = e;
@@ -2851,6 +2911,34 @@ namespace olc
                     }
                 }
             }
+            if (!is_a_window_focused())
+                current_focused_window = "";
+            // arrange the deques containing the windows
+            if (current_focused_window != saved_focused_window)
+            {
+                // change window focus
+                push_focused_to_back();
+
+                for (auto& e : elements)
+                {
+                    if (!e)
+                        continue;
+                    if (!e->get_group().empty())
+                        if (!active_group.second.empty())
+                            if (e->parent && e->parent->get_id() == active_group.first)
+                                if (e->get_group() != active_group.second || e->get_group().empty())
+                                    continue;
+                    if (!e->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
+                        continue;
+
+                    if (e->parent)
+                    {
+                        if (e->parent->get_id() == saved_focused_window)
+                            e->input(pge);
+                    }
+                }
+            }
+            saved_focused_window = current_focused_window;
         }
     }
 }
