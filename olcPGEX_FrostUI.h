@@ -226,6 +226,7 @@ namespace olc
         bool* toggle_button_state = nullptr;
 
         std::string inputfield_text = "";
+        bool mask_inputfield = false;
 
         bool is_focused = false;
 
@@ -276,6 +277,8 @@ namespace olc
         const float get_slider_value() const;
 
         const std::string get_inputfield_value() const;
+
+        void mask_inputfield_value(bool state);
 
         olc::vi2d get_text_size(olc::PixelGameEngine* pge);
     };
@@ -873,6 +876,11 @@ namespace olc
             std::cout << "Trying to get_inputfield_value on wrong UI_TYPE\n";
 
         return "";
+    }
+
+    void FUI_Element::mask_inputfield_value(bool state)
+    {
+        mask_inputfield = state;
     }
 
     olc::vi2d FUI_Element::get_text_size(olc::PixelGameEngine* pge)
@@ -2024,7 +2032,10 @@ namespace olc
 
         if (display_text_size.x <= size.x && inputfield_text.size() > old_inputfield_text.size())
         {
-            displayed_text += inputfield_text.back();
+            if (mask_inputfield)
+                displayed_text += "*";
+            else
+                displayed_text += inputfield_text.back();
             old_inputfield_text = inputfield_text;
         }
         else if (display_text_size.x >= size.x)
