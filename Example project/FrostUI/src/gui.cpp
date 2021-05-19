@@ -12,6 +12,9 @@ void GUI::create()
 
     frost_ui.add_inputfield("input_username", "Username: ", { groupbox_pos.x + 70, groupbox_pos.y + 20 }, { 150, 20 });
     frost_ui.add_inputfield("input_password", "Password: ", { groupbox_pos.x + 70, groupbox_pos.y + 60 }, { 150, 20 });
+    
+    // mask password
+    frost_ui.find_element("input_password")->mask_inputfield_value(true);
 
     // set inputfield text_scaling
     frost_ui.find_element("input_username")->inputfield_scale({ 1.0f, 1.25f });
