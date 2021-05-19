@@ -1824,18 +1824,6 @@ namespace olc
 
         auto text_size = pge->GetTextSizeProp(temp_text) * text_scale;
         pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2)), temp_text, text_color);
-
-        
-        switch (slider_type)
-        {
-        case type::FLOAT:
-            if (slider_value_holder_float && *slider_value_holder_float == 0.0f)
-                ratio = *slider_value_holder_float / range.y;
-            break;
-        case type::INT:
-            if (slider_value_holder_int && *slider_value_holder_int == 0.0f)
-                ratio = *slider_value_holder_int / range.y;
-        }
         
         // draw slider body
         switch (state)
