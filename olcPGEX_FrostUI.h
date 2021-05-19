@@ -400,6 +400,8 @@ namespace olc
         float ratio = 0.f;
         State state = State::NONE;
 
+        bool run_once = true;
+
         std::string to_string_with_precision(const float a_value, const int n);
 
     public:
@@ -1778,6 +1780,35 @@ namespace olc
 
         auto absolute_position = position + adaptive_position;
 
+        // start with the value of the value_holder else set value to minimum in range
+        if (run_once)
+        {
+            switch (slider_type)
+            {
+            case type::FLOAT:
+                if (*slider_value_holder_float < range.x)
+                {
+                    slider_value_float = range.x;
+                    *slider_value_holder_float = range.x;
+                }
+                else
+                    slider_value_float = *slider_value_holder_float;
+
+                ratio = slider_value_float / range.y;
+                break;
+            case type::INT:
+                if (*slider_value_holder_int < range.x)
+                {
+                    slider_value_int = range.x;
+                    *slider_value_holder_int = range.x;
+                }
+                else
+                    slider_value_int = *slider_value_holder_int;
+                ratio = slider_value_int / range.y;
+                break;
+            }
+        }
+
         // draw title with slider value
         std::string temp_text;
 
@@ -1794,17 +1825,18 @@ namespace olc
         auto text_size = pge->GetTextSizeProp(temp_text) * text_scale;
         pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2)), temp_text, text_color);
 
+        
         switch (slider_type)
         {
         case type::FLOAT:
-            if (ratio == 0.0f)
-                ratio = slider_value_float / range.y;
+            if (slider_value_holder_float && *slider_value_holder_float == 0.0f)
+                ratio = *slider_value_holder_float / range.y;
             break;
         case type::INT:
-            if (ratio == 0.0f)
-                ratio = slider_value_int / range.y;
+            if (slider_value_holder_int && *slider_value_holder_int == 0.0f)
+                ratio = *slider_value_holder_int / range.y;
         }
-
+        
         // draw slider body
         switch (state)
         {
@@ -1848,8 +1880,8 @@ namespace olc
         if (state == State::ACTIVE)
         {
             float slider_delta = (pge->GetMouseX() - (adaptive_position.x + position.x));
-            if (slider_delta <= range.x)
-                slider_delta = range.x;
+            if (slider_delta <= 0)
+                slider_delta = 0;
             else if (slider_delta >= size.x)
                 slider_delta = size.x;
 
@@ -1858,11 +1890,21 @@ namespace olc
             switch (slider_type)
             {
             case type::FLOAT:
-                slider_value_float = range.x + (range.y - range.x) * ratio;
+                slider_value_float = range.y * ratio;
+                if (slider_value_float <= range.x)
+                {
+                    slider_value_float = range.x;
+                    ratio = slider_value_float / range.y;
+                }
                 *slider_value_holder_float = slider_value_float;
                 break;
             case type::INT:
-                slider_value_int = range.x + (range.y - range.x) * ratio;
+                slider_value_int = range.y * ratio;
+                if (slider_value_int <= range.x)
+                {
+                    slider_value_int = range.x;
+                    ratio = slider_value_int / range.y;
+                }
                 *slider_value_holder_int = slider_value_int;
                 break;
             }
