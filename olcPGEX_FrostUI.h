@@ -2191,7 +2191,6 @@ namespace olc
             if (window->is_focused())
             {
                 windows.push_back(window);
-                std::cout << "we did an eraser thingy " << windows[i]->get_id() + "\n";
                 windows.erase(windows.begin() + i);
             }
             i++;
