@@ -1815,16 +1815,15 @@ namespace olc
         switch (slider_type)
         {
         case type::FLOAT:
-            temp_text = text + " [" + to_string_with_precision(slider_value_float, 2) + "] ";
+            temp_text = "[" + to_string_with_precision(slider_value_float, 2) + "]";
             break;
         case type::INT:
-            temp_text = text + " [" + std::to_string(slider_value_int) + "] ";
+            temp_text = "[" + std::to_string(slider_value_int) + "]";
             break;
         }
 
-        auto text_size = pge->GetTextSizeProp(temp_text) * text_scale;
-        pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2)), temp_text, text_color);
-        
+        auto text_size_title = pge->GetTextSizeProp(text) * text_scale;
+        pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - text_size_title.x, absolute_position.y + (size.y / 2) - (text_size_title.y / 2) + 1), text, text_color);
         // draw slider body
         switch (state)
         {
@@ -1838,14 +1837,19 @@ namespace olc
             pge->FillRectDecal(absolute_position, olc::vf2d(size.x * ratio, size.y), color_scheme.slider_hover);
             break;
         }
+
+        // Draw text ontop of the slider body
+        auto text_size = pge->GetTextSizeProp(temp_text) * text_scale;
+        pge->DrawStringPropDecal(olc::vf2d(absolute_position.x + size.x / 2 - text_size.x / 2, absolute_position.y + (size.y / 2) - (text_size.y / 2) + 1), temp_text, text_color);
+
         // top left outline
         pge->FillRectDecal(absolute_position, olc::vf2d(size.x, 1), color_scheme.slider_outline);
         // left outline
         pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.slider_outline);
         // right outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x, absolute_position.y), olc::vi2d(1, size.y), color_scheme.slider_outline);
+        pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x - 1, absolute_position.y), olc::vi2d(1, size.y), color_scheme.slider_outline);
         // bottom outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.slider_outline);
+        pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x, 1), color_scheme.slider_outline);
     }
 
     void FUI_Slider::input(olc::PixelGameEngine* pge)
