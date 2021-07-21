@@ -2870,6 +2870,17 @@ namespace olc
     {
         // Cycle the inputfields before anything is drawn
         cycle_inputfield();
+
+        // run this only once to prime the window focusing system
+        if (prime_window_focusing)
+        {
+            push_focused_to_back();
+            prime_window_focusing = false;
+        }
+
+        if (trigger_pushback.first)
+            push_focused_element_to_back();
+
         // Draw standalone elements first (standalone elements are elements without a parent / window)
         for (auto& g : groupboxes)
         {
@@ -2897,22 +2908,29 @@ namespace olc
                             continue;
             if (!e->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
                 continue;
+            // reset top priority if not focused anymore
+            if (trigger_pushback.second && !e->is_focused && trigger_pushback.second->identifier == e->identifier)
+            {
+                trigger_pushback.first = false;
+                trigger_pushback.second = nullptr;
+            }
+            if (e->is_focused && e->ui_type != FUI_Type::INPUTFIELD)
+            {
+                trigger_pushback.first = true;
+                trigger_pushback.second = e;
+            }
             if (!e->parent)
             {
+                if (trigger_pushback.second)
+                {
+                    if (trigger_pushback.second->identifier == e->identifier)
+                        e->input(pge);
+                    else
+                        e->input(pge);
+                }
                 e->draw(pge);
-                e->input(pge);
             }
         }
-
-        // run this only once to prime the window focusing system
-        if (prime_window_focusing)
-        {
-            push_focused_to_back();
-            prime_window_focusing = false;
-        }
-
-        if (trigger_pushback.first)
-            push_focused_element_to_back();
 
         // Draw windows first
         if (windows.size() > 0)
