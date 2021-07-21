@@ -2912,11 +2912,7 @@ namespace olc
         }
 
         if (trigger_pushback.first)
-        {
             push_focused_element_to_back();
-            trigger_pushback.first = false;
-            trigger_pushback.second = nullptr;
-        }
 
         // Draw windows first
         if (windows.size() > 0)
@@ -2971,6 +2967,12 @@ namespace olc
                                     continue;
                     if (!e->get_group().empty() && (active_group.first.empty() && active_group.second.empty()))
                         continue;
+                    // reset top priority if not focused anymore
+                    if (trigger_pushback.second && !e->is_focused && trigger_pushback.second->identifier == e->identifier)
+                    {
+                        trigger_pushback.first = false;
+                        trigger_pushback.second = nullptr;
+                    }
                     if (e->is_focused && e->ui_type != FUI_Type::INPUTFIELD)
                     {
                         trigger_pushback.first = true;
