@@ -270,6 +270,10 @@ namespace olc
 
         const olc::vi2d get_position() const;
 
+        void set_default_item(const std::string& item);
+
+        void set_default_items(const std::vector<std::string> items);
+
         void set_slider_value(float value);
 
         void set_slider_value(int value);
@@ -797,16 +801,56 @@ namespace olc
         if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)
             animation_speed = speed;
         else
-            std::cout << "Trying to set animation speed on wrong UI_TYPE\n";
+            std::cout << "Trying to set_animation_speed on wrong UI_TYPE\n";
     }
 
     std::string FUI_Element::get_selected_item()
     {
         if (ui_type == FUI_Type::DROPDOWN)
             return selected_element.second;
-        else std::cout << "Trying to set animation speed on wrong UI_TYPE\n";
+        else std::cout << "Trying to get_selected_item on wrong UI_TYPE\n";
 
         return "";
+    }
+
+    void FUI_Element::set_default_item(const std::string& item)
+    {
+        if (ui_type == FUI_Type::DROPDOWN)
+        {
+            for (auto& element : elements)
+            {
+                if (element.second.second == item)
+                    selected_element = element.second;
+            }
+        }
+        else
+            std::cout << "Trying to set_default_item to wrong UI_TYPE\n";
+    }
+
+    void FUI_Element::set_default_items(const std::vector<std::string> items)
+    {
+        if (ui_type == FUI_Type::COMBOLIST)
+        {
+            for (auto& element : elements)
+            {
+                for (auto& item : items)
+                {
+                    bool found = false;
+                    for (auto& e : selected_elements)
+                    {
+                        if (e.second == item)
+                            found = true;
+                    }
+                    if (element.second.second == item && !found)
+                    {
+                        element.first = DropdownState::ACTIVE;
+                        selected_elements.push_back(element.second);
+                    }
+                }
+            }
+        }
+        else
+            std::cout << "Trying to set_default_item to wrong UI_TYPE\n";
     }
 
     std::vector<std::string> FUI_Element::get_selected_items()
