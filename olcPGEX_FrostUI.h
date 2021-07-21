@@ -2925,9 +2925,9 @@ namespace olc
                 {
                     if (trigger_pushback.second->identifier == e->identifier)
                         e->input(pge);
-                    else
-                        e->input(pge);
                 }
+                else
+                    e->input(pge);
                 e->draw(pge);
             }
         }
