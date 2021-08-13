@@ -101,6 +101,8 @@ namespace olc
         olc::Pixel inputfield_background = { 150, 150, 150 };
         olc::Pixel inputfield_select_all_background = { 29, 43, 240, 150 };
         olc::Pixel inputfield_cursor = olc::BLACK;
+        // scroll indicator
+        olc::Pixel scroll_indicator = { 50, 50, 50 };
     };
 
     enum class FUI_Type
@@ -235,6 +237,7 @@ namespace olc
         std::vector<std::pair<int, std::pair<olc::vf2d, std::string>>> selected_elements;
         std::vector<int> return_selected_items;
         float animation_speed = 150.0f;
+        int max_display_items = 0;
 
         olc::Pixel text_color = olc::BLACK;
 
@@ -273,6 +276,8 @@ namespace olc
         void set_default_item(const int& item);
 
         void set_default_items(const std::vector<int>& items);
+
+        void set_max_display_items(const int amount);
 
         void set_slider_value(float value);
 
@@ -351,6 +356,7 @@ namespace olc
         olc::vf2d active_size = olc::vf2d(0, 0);
         DropdownState state = DropdownState::NONE;
         bool is_open = false;
+        int item_start_index = 1;
     public:
         FUI_Dropdown(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
         FUI_Dropdown(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
@@ -368,6 +374,7 @@ namespace olc
         olc::vf2d active_size = olc::vf2d(0, 0);
         DropdownState state = DropdownState::NONE;
         bool is_open = false;
+        int item_start_index = 1;
     public:
         FUI_Combolist(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
         FUI_Combolist(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
@@ -869,6 +876,17 @@ namespace olc
             std::cout << "Trying to set_default_item to wrong UI_TYPE\n";
     }
 
+    void FUI_Element::set_max_display_items(const int amount)
+    {
+        if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)
+        {
+            if (amount <= elements.size())
+                max_display_items = amount;
+        }
+        else
+            std::cout << "Trying to set_max_display_items on wrong UI_TYPE\n";
+    }
+
     std::vector<int> FUI_Element::get_selected_items()
     {
         if (ui_type == FUI_Type::COMBOLIST)
@@ -1294,6 +1312,8 @@ namespace olc
         if (is_open)
         {
             float future_y = size.y * elements.size();
+            if (max_display_items > 0)
+                future_y = size.y * max_display_items;
             active_size.y += animation_speed * pge->GetElapsedTime();
             if (active_size.y >= future_y)
                 active_size.y = future_y;
@@ -1330,27 +1350,77 @@ namespace olc
             pge->DrawStringPropDecal(text_position, selected_element.second.second, text_color, selected_element.second.first);
         }
 
-        int i = 1;
-        for (auto& element : elements)
+        if (max_display_items > 0 && max_display_items < elements.size())
         {
-            auto element_text_size = pge->GetTextSizeProp(element.second.second.second) * element.second.second.first;
-            if (active_size.y >= size.y * i)
+            int i = 1;
+            for (int j = item_start_index - 1; j < item_start_index + max_display_items - 1; j++)
             {
-                switch (element.second.first)
+                auto element_text_size = pge->GetTextSizeProp(elements[j].second.second.second) * elements[j].second.second.first;
+                if (active_size.y >= size.y * i)
                 {
-                case DropdownState::NONE:
-                    pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
-                    break;
-                case DropdownState::HOVER:
-                    pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
-                    break;
+                    switch (elements[j].second.first)
+                    {
+                    case DropdownState::NONE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
+                        break;
+                    case DropdownState::HOVER:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
+                        break;
+                    }
+                }
+                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
+                    pge->DrawStringPropDecal(text_position, elements[j].second.second.second, text_color, elements[j].second.second.first);
+
+                i++;
+            }
+
+            if (is_open && (max_display_items < elements.size()))
+            {
+                float scroll_size =  (size.y + active_size.y) / (elements.size() - max_display_items);
+                float scroll_y_pos = ((item_start_index - 1) * scroll_size) - scroll_size;
+
+                if (item_start_index - 1 > 0)
+                {
+                    pge->FillRectDecal({ absolute_position.x + size.x - 3, absolute_position.y + scroll_y_pos },
+                        { 3, scroll_size }, color_scheme.scroll_indicator);
+                }
+                else
+                {
+                    auto arrow_size = pge->GetTextSizeProp("V");
+                    pge->FillRectDecal({ absolute_position.x + size.x - (arrow_size.x / 2) - 1, absolute_position.y + (size.y / 2) - (arrow_size.y / 2) + 2 },
+                        { 1, 6 }, color_scheme.scroll_indicator);
+                    pge->DrawStringPropDecal({ absolute_position.x + (size.x - arrow_size.x), absolute_position.y + (size.y / 2 )},
+                        "V", color_scheme.scroll_indicator);
                 }
             }
-            text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
-            if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
-                pge->DrawStringPropDecal(text_position, element.second.second.second, text_color, element.second.second.first);
-            i++;
+        }
+        else
+        {
+            int i = 1;
+            for (auto& element : elements)
+            {
+                auto element_text_size = pge->GetTextSizeProp(element.second.second.second) * element.second.second.first;
+                if (active_size.y >= size.y * i)
+                {
+                    switch (element.second.first)
+                    {
+                    case DropdownState::NONE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
+                        break;
+                    case DropdownState::HOVER:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
+                        break;
+                    }
+                }
+                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
+                    pge->DrawStringPropDecal(text_position, element.second.second.second, text_color, element.second.second.first);
+
+                i++;
+            }
         }
     }
 
@@ -1385,30 +1455,80 @@ namespace olc
 
         if (is_open)
         {
-            int i = 1;
-            for (auto& element : elements)
+            if (max_display_items > 0 && max_display_items < elements.size()) // if we have a max display limit we want to run a slightly different method of checking input
             {
-                if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
-                    pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
-                    pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
-                    pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
+                int i = 1;
+                for (int j = item_start_index - 1; j < item_start_index + max_display_items - 1; j++)
                 {
-                    if (pge->GetMouse(0).bPressed)
+                    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                        pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
+                        pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
                     {
-                        selected_element.first = element.first;
-                        selected_element.second = element.second.second;
-                        is_open = false;
+                        if (pge->GetMouse(0).bPressed)
+                        {
+                            selected_element.first = elements[j].first;
+                            selected_element.second = elements[j].second.second;
+                            is_open = false;
+                        }
+                        else
+                            elements[j].second.first = DropdownState::HOVER;
                     }
                     else
-                        element.second.first = DropdownState::HOVER;
+                    {
+                        elements[j].second.first = DropdownState::NONE;
+                        if (could_close && pge->GetMouse(0).bPressed)
+                            is_open = false;
+                    }
+                    i++;
                 }
-                else
+                if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                    pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                    pge->GetMousePos().y >= adaptive_position.y + position.y &&
+                    pge->GetMousePos().y <= adaptive_position.y + position.y + size.y + active_size.y)
                 {
-                    element.second.first = DropdownState::NONE;
-                    if (could_close && pge->GetMouse(0).bPressed)
-                        is_open = false;
+                    if (elements.size() > max_display_items)
+                    {
+                        if (pge->GetMouseWheel() > 0)
+                        {
+                            if (item_start_index > 1)
+                                item_start_index--;
+                        }
+                        else if (pge->GetMouseWheel() < 0)
+                        {
+                            if (item_start_index < (elements.size() - max_display_items + 1))
+                                item_start_index++;
+                        }
+                    }
                 }
-                i++;
+            }
+            else // if we don't have any max display limit
+            {
+                int i = 1;
+                for (auto& element : elements)
+                {
+                    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                        pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
+                        pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
+                    {
+                        if (pge->GetMouse(0).bPressed)
+                        {
+                            selected_element.first = element.first;
+                            selected_element.second = element.second.second;
+                            is_open = false;
+                        }
+                        else
+                            element.second.first = DropdownState::HOVER;
+                    }
+                    else
+                    {
+                        element.second.first = DropdownState::NONE;
+                        if (could_close && pge->GetMouse(0).bPressed)
+                            is_open = false;
+                    }
+                    i++;
+                }
             }
         }
 
@@ -1477,6 +1597,8 @@ namespace olc
         if (is_open)
         {
             float future_y = size.y * elements.size();
+            if (max_display_items > 0)
+                future_y = size.y * max_display_items;
             active_size.y += animation_speed * pge->GetElapsedTime();
             if (active_size.y >= future_y)
                 active_size.y = future_y;
@@ -1523,30 +1645,81 @@ namespace olc
             pge->DrawStringPropDecal(text_position, selected_elements[0].second.second, text_color, selected_elements[0].second.first);
         }
 
-        int i = 1;
-        for (auto& element : elements)
+        if (max_display_items > 0 && max_display_items < elements.size())
         {
-            auto element_text_size = pge->GetTextSizeProp(element.second.second.second) * element.second.second.first;
-            if (active_size.y >= size.y * i)
+            int i = 1;
+            for (int j = item_start_index - 1; j < item_start_index + max_display_items - 1; j++)
             {
-                switch (element.second.first)
+                auto element_text_size = pge->GetTextSizeProp(elements[j].second.second.second) * elements[j].second.second.first;
+                if (active_size.y >= size.y * i)
                 {
-                case DropdownState::NONE:
-                    pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
-                    break;
-                case DropdownState::HOVER:
-                    pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
-                    break;
-                case DropdownState::ACTIVE:
-                    pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
-                    break;
+                    switch (elements[j].second.first)
+                    {
+                    case DropdownState::NONE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
+                        break;
+                    case DropdownState::HOVER:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
+                        break;
+                    case DropdownState::ACTIVE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
+                        break;
+                    }
+                }
+                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
+                    pge->DrawStringPropDecal(text_position, elements[j].second.second.second, text_color, elements[j].second.second.first);
+                i++;
+            }
+
+            if (is_open && (max_display_items < elements.size()))
+            {
+                float scroll_size = (size.y + active_size.y) / (elements.size() - max_display_items);
+                float scroll_y_pos = ((item_start_index - 1) * scroll_size) - scroll_size;
+
+                if (item_start_index - 1 > 0)
+                {
+                    pge->FillRectDecal({ absolute_position.x + size.x - 3, absolute_position.y + scroll_y_pos },
+                        { 3, scroll_size }, color_scheme.scroll_indicator);
+                }
+                else
+                {
+                    auto arrow_size = pge->GetTextSizeProp("V");
+                    pge->FillRectDecal({ absolute_position.x + size.x - (arrow_size.x / 2) - 1, absolute_position.y + (size.y / 2) - (arrow_size.y / 2) + 2 },
+                        { 1, 6 }, color_scheme.scroll_indicator);
+                    pge->DrawStringPropDecal({ absolute_position.x + (size.x - arrow_size.x), absolute_position.y + (size.y / 2) },
+                        "V", color_scheme.scroll_indicator);
                 }
             }
-            text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
-            if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
-                pge->DrawStringPropDecal(text_position, element.second.second.second, text_color, element.second.second.first);
-            i++;
+        }
+        else
+        {
+            int i = 1;
+            for (auto& element : elements)
+            {
+                auto element_text_size = pge->GetTextSizeProp(element.second.second.second) * element.second.second.first;
+                if (active_size.y >= size.y * i)
+                {
+                    switch (element.second.first)
+                    {
+                    case DropdownState::NONE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
+                        break;
+                    case DropdownState::HOVER:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
+                        break;
+                    case DropdownState::ACTIVE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
+                        break;
+                    }
+                }
+                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
+                    pge->DrawStringPropDecal(text_position, element.second.second.second, text_color, element.second.second.first);
+                i++;
+            }
         }
     }
 
@@ -1580,48 +1753,116 @@ namespace olc
 
         if (is_open)
         {
-            int i = 1;
-            for (auto& element : elements)
+            if (max_display_items > 0 && max_display_items < elements.size()) // if we have a max display limit we want to run a slightly different method of checking input
             {
-                if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
-                    pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
-                    pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
-                    pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
+                int i = 1;
+                for (int j = item_start_index - 1; j < item_start_index + max_display_items - 1; j++)
                 {
-                    if (pge->GetMouse(0).bPressed)
+                    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                        pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
+                        pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
                     {
-                        bool did_find_element = false;
-                        for (auto& sel_element : selected_elements)
+                        if (pge->GetMouse(0).bPressed)
                         {
-                            if (sel_element.first == element.first)
+                            bool did_find_element = false;
+                            for (auto& sel_element : selected_elements)
                             {
-                                did_find_element = true;
-                                int j = 0;
-                                for (auto& el : selected_elements)
+                                if (sel_element.first == elements[j].first)
                                 {
-                                    if (el.first == element.first)
+                                    did_find_element = true;
+                                    int j = 0;
+                                    for (auto& el : selected_elements)
                                     {
-                                        element.second.first = DropdownState::NONE;
-                                        selected_elements.erase(selected_elements.begin() + j);
-                                        break;
+                                        if (el.first == elements[j].first)
+                                        {
+                                            elements[j].second.first = DropdownState::NONE;
+                                            selected_elements.erase(selected_elements.begin() + j);
+                                            break;
+                                        }
+                                        j++;
                                     }
-                                    j++;
+                                    break;
                                 }
-                                break;
+                            }
+                            if (!did_find_element)
+                            {
+                                elements[j].second.first = DropdownState::ACTIVE;
+                                selected_elements.push_back(std::make_pair(elements[j].first, elements[j].second.second));
                             }
                         }
-                        if (!did_find_element)
+                        else if (elements[j].second.first != DropdownState::ACTIVE)
+                            elements[j].second.first = DropdownState::HOVER;
+                    }
+                    else if (elements[j].second.first != DropdownState::ACTIVE)
+                        elements[j].second.first = DropdownState::NONE;
+                    i++;
+                }
+                if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                    pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                    pge->GetMousePos().y >= adaptive_position.y + position.y &&
+                    pge->GetMousePos().y <= adaptive_position.y + position.y + size.y + active_size.y)
+                {
+                    if (elements.size() > max_display_items)
+                    {
+                        if (pge->GetMouseWheel() > 0)
                         {
-                            element.second.first = DropdownState::ACTIVE;
-                            selected_elements.push_back(std::make_pair(element.first, element.second.second));
+                            if (item_start_index > 1)
+                                item_start_index--;
+                        }
+                        else if (pge->GetMouseWheel() < 0)
+                        {
+                            if (item_start_index < (elements.size() - max_display_items + 1))
+                                item_start_index++;
                         }
                     }
-                    else if (element.second.first != DropdownState::ACTIVE)
-                        element.second.first = DropdownState::HOVER;
                 }
-                else if (element.second.first != DropdownState::ACTIVE)
-                    element.second.first = DropdownState::NONE;
-                i++;
+            }
+            else // if we don't have any max display limit
+            {
+                int i = 1;
+                for (auto& element : elements)
+                {
+                    if (pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                        pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                        pge->GetMousePos().y > adaptive_position.y + position.y + (size.y * i) &&
+                        pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
+                    {
+                        if (pge->GetMouse(0).bPressed)
+                        {
+                            bool did_find_element = false;
+                            for (auto& sel_element : selected_elements)
+                            {
+                                if (sel_element.first == element.first)
+                                {
+                                    did_find_element = true;
+                                    int j = 0;
+                                    for (auto& el : selected_elements)
+                                    {
+                                        if (el.first == element.first)
+                                        {
+                                            element.second.first = DropdownState::NONE;
+                                            selected_elements.erase(selected_elements.begin() + j);
+                                            break;
+                                        }
+                                        j++;
+                                    }
+                                    break;
+                                }
+                            }
+                            if (!did_find_element)
+                            {
+                                element.second.first = DropdownState::ACTIVE;
+                                selected_elements.push_back(std::make_pair(element.first, element.second.second));
+                            }
+                        }
+                        else if (element.second.first != DropdownState::ACTIVE)
+                            element.second.first = DropdownState::HOVER;
+                    }
+                    else if (element.second.first != DropdownState::ACTIVE)
+                        element.second.first = DropdownState::NONE;
+                    i++;
+                }
             }
         }
 
@@ -1887,8 +2128,6 @@ namespace olc
                         slider_ratio = (1.0f + (slider_value_int / range.y)) * 0.5;
                     else
                         slider_ratio = 0.5f;
-
-                    std::cout << slider_ratio << "\n";
                 }
                 else
                     slider_ratio = slider_value_int / range.y;
