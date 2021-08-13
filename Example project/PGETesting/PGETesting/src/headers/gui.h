@@ -16,6 +16,9 @@ private:
     int screen_height = 250;
     int quality = 0;
     bool fullscreen = false;
+
+    int slider_value_int = -5;
+    float slider_value_float = -132.0f;
 public:
 
     void create();

@@ -402,7 +402,9 @@ namespace olc
             ACTIVE
         };
         float ratio = 0.f;
+        float slider_ratio = 0.f;
         State state = State::NONE;
+        bool has_negative = false;
 
         bool run_once = true;
 
@@ -1842,6 +1844,9 @@ namespace olc
         // start with the value of the value_holder else set value to minimum in range
         if (run_once)
         {
+            // check if there's negative values in the range
+            if (range.x < 0)
+                has_negative = true;
             switch (slider_type)
             {
             case type::FLOAT:
@@ -1853,7 +1858,17 @@ namespace olc
                 else
                     slider_value_float = *slider_value_holder_float;
 
-                ratio = slider_value_float / range.y;
+                if (has_negative)
+                {
+                    if (slider_value_float < 0.0f)
+                        slider_ratio = (1.0f - (slider_value_float / range.x)) * 0.5;
+                    else if (slider_value_float > 0.0f)
+                        slider_ratio = (1.0f + (slider_value_float / range.y)) * 0.5;
+                    else
+                        slider_ratio = 0.5f;
+                }
+                else
+                    slider_ratio = slider_value_float / range.y;
                 break;
             case type::INT:
                 if (*slider_value_holder_int < range.x)
@@ -1863,9 +1878,24 @@ namespace olc
                 }
                 else
                     slider_value_int = *slider_value_holder_int;
-                ratio = slider_value_int / range.y;
+
+                if (has_negative)
+                {
+                    if (slider_value_int < 0)
+                        slider_ratio = (1.0f - (slider_value_int / range.x)) * 0.5;
+                    else if (slider_value_int > 0)
+                        slider_ratio = (1.0f + (slider_value_int / range.y)) * 0.5;
+                    else
+                        slider_ratio = 0.5f;
+
+                    std::cout << slider_ratio << "\n";
+                }
+                else
+                    slider_ratio = slider_value_int / range.y;
                 break;
             }
+
+            run_once = false;
         }
 
         // draw title with slider value
@@ -1887,13 +1917,13 @@ namespace olc
         switch (state)
         {
         case State::NONE:
-            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * ratio, size.y), color_scheme.slider_normal);
+            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * slider_ratio, size.y), color_scheme.slider_normal);
             break;
         case State::HOVER:
-            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * ratio, size.y), color_scheme.slider_hover);
+            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * slider_ratio, size.y), color_scheme.slider_hover);
             break;
         case State::ACTIVE:
-            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * ratio, size.y), color_scheme.slider_hover);
+            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * slider_ratio, size.y), color_scheme.slider_hover);
             break;
         }
 
@@ -1933,32 +1963,50 @@ namespace olc
 
         if (state == State::ACTIVE)
         {
-            float slider_delta = (pge->GetMouseX() - (adaptive_position.x + position.x));
-            if (slider_delta <= 0)
-                slider_delta = 0;
-            else if (slider_delta >= size.x)
-                slider_delta = size.x;
+            if (has_negative)
+                if (((pge->GetMouseX() - (adaptive_position.x + position.x)) / size.x) <= 0.5)
+                {
+                    ratio = (-1.0f * (pge->GetMouseX() - (adaptive_position.x + position.x)) / size.x) * 2.0f;
+                }
+                else
+                    ratio = -1.0f + ((pge->GetMouseX() - (adaptive_position.x + position.x)) / size.x) * 2;
 
-            ratio = (slider_delta / size.x);
+            slider_ratio = (pge->GetMouseX() - (adaptive_position.x + position.x)) / size.x;
+
+            if (slider_ratio <= 0.0f)
+                slider_ratio = 0.0f;
+            else if (slider_ratio >= 1.0f)
+                slider_ratio = 1.0f;
+
+            if (slider_ratio <= 0.0f)
+                ratio = 0.0f;
+            else if (slider_ratio >= 1.0f)
+                ratio = 1.0f;
 
             switch (slider_type)
             {
             case type::FLOAT:
-                slider_value_float = range.y * ratio;
-                if (slider_value_float <= range.x)
+                if (has_negative)
                 {
-                    slider_value_float = range.x;
-                    ratio = slider_value_float / range.y;
+                    if (ratio <= 0.0f)
+                        slider_value_float = range.x * (1.0f - (-1.0f * ratio));
+                    else
+                        slider_value_float = range.y * ratio;
                 }
+                else
+                    slider_value_float = range.y * slider_ratio;
                 *slider_value_holder_float = slider_value_float;
                 break;
             case type::INT:
-                slider_value_int = range.y * ratio;
-                if (slider_value_int <= range.x)
+                if (has_negative)
                 {
-                    slider_value_int = range.x;
-                    ratio = slider_value_int / range.y;
+                    if (ratio <= 0.0f)
+                        slider_value_int = range.x * (1.0f - (-1.0f * ratio));
+                    else
+                        slider_value_int = range.y * ratio;
                 }
+                else
+                    slider_value_int = range.y * slider_ratio;
                 *slider_value_holder_int = slider_value_int;
                 break;
             }

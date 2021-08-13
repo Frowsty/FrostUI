@@ -73,10 +73,14 @@ void GUI::create()
 
             std::ofstream file("settings.json");
 
-            file << settings;
+            file << settings.dump(4);
 
             run_return = false;
         });
+
+    frost_ui.add_int_slider("slider", "Testing: ", { 80, 160 }, { 100, 10 }, { -5, 5 }, &slider_value_int);
+
+    frost_ui.add_float_slider("slider1", "Testing 2: ", { 80, 190 }, { 100, 10 }, { -155, 372 }, &slider_value_float);
 }
 
 bool GUI::run()
