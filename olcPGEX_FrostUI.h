@@ -1771,16 +1771,16 @@ namespace olc
                                 if (sel_element.first == elements[j].first)
                                 {
                                     did_find_element = true;
-                                    int j = 0;
+                                    int v = 0;
                                     for (auto& el : selected_elements)
                                     {
                                         if (el.first == elements[j].first)
                                         {
                                             elements[j].second.first = DropdownState::NONE;
-                                            selected_elements.erase(selected_elements.begin() + j);
+                                            selected_elements.erase(selected_elements.begin() + v);
                                             break;
                                         }
-                                        j++;
+                                        v++;
                                     }
                                     break;
                                 }

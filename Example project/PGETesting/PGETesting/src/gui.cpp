@@ -31,7 +31,7 @@ void GUI::create()
     frost_ui.find_element("quality")->add_item("High");
     frost_ui.find_element("quality")->add_item("Medium");
     frost_ui.find_element("quality")->add_item("Low");
-    frost_ui.find_element("quality")->set_default_item(0);
+    frost_ui.find_element("quality")->set_default_items({ 0 });
     frost_ui.find_element("quality")->set_animation_speed(1000);
     frost_ui.find_element("quality")->set_max_display_items(5);
 
