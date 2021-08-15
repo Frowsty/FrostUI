@@ -19,6 +19,9 @@ private:
 
     int slider_value_int = -5;
     float slider_value_float = -132.0f;
+
+    olc::Renderable button_normal;
+    std::vector<olc::vi2d> texture_position;
 public:
 
     void create();

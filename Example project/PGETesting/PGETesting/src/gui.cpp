@@ -4,6 +4,10 @@
 
 void GUI::create()
 {
+    button_normal.Load("textures/button.jpg");
+    texture_position.push_back({ 55, 60 });
+    texture_position.push_back({ 55, 170 });
+
     frost_ui.add_groupbox("groupbox1", "", { 0, 0 }, { 200, 250 });
 
     frost_ui.add_dropdown("resolution", "Resolution: ", { 80, 10 }, { 100, 20 });
@@ -19,9 +23,9 @@ void GUI::create()
     frost_ui.find_element("resolution")->add_item("640x360");
     frost_ui.find_element("resolution")->set_default_item(0);
     frost_ui.find_element("resolution")->set_animation_speed(1000);
-    frost_ui.find_element("resolution")->set_max_display_items(5);
+    frost_ui.find_element("resolution")->set_max_display_items(2);
 
-    frost_ui.add_combolist("quality", "Quality: ", { 80, 40 }, { 100, 20 });
+    frost_ui.add_dropdown("quality", "Quality: ", { 80, 40 }, { 100, 20 });
     frost_ui.find_element("quality")->add_item("High");
     frost_ui.find_element("quality")->add_item("Medium");
     frost_ui.find_element("quality")->add_item("Low");
@@ -31,7 +35,7 @@ void GUI::create()
     frost_ui.find_element("quality")->add_item("High");
     frost_ui.find_element("quality")->add_item("Medium");
     frost_ui.find_element("quality")->add_item("Low");
-    frost_ui.find_element("quality")->set_default_items({ 0 });
+    frost_ui.find_element("quality")->set_default_item(0);
     frost_ui.find_element("quality")->set_animation_speed(1000);
     frost_ui.find_element("quality")->set_max_display_items(5);
 
@@ -91,6 +95,7 @@ void GUI::create()
 
             run_return = false;
         });
+    //frost_ui.find_element("launch")->add_texture(button_normal.Decal(), texture_position, { 295, 65 }, { 0.6f, 0.4f });
 
     frost_ui.add_int_slider("slider", "Testing: ", { 80, 160 }, { 100, 10 }, { -5, 5 }, &slider_value_int);
 

@@ -209,6 +209,12 @@ namespace olc
         olc::vf2d input_scale = { 1.0f, 1.0f };
         FUI_Type ui_type;
 
+        bool has_textures = false;
+        olc::Decal* texture;
+        std::vector<olc::vi2d> texture_positions;
+        olc::vi2d texture_size = { 0, 0 };
+        olc::vf2d texture_scale = { 1.0f, 1.0f };
+
         FUI_Colors color_scheme;
 
 
@@ -290,6 +296,8 @@ namespace olc
         void mask_inputfield_value(bool state);
 
         olc::vi2d get_text_size(olc::PixelGameEngine* pge);
+
+        void add_texture(olc::Decal* texture, std::vector<olc::vi2d> texture_positions, olc::vi2d size, olc::vf2d scale);
     };
 
     class FUI_Label : public FUI_Element
@@ -968,6 +976,16 @@ namespace olc
         return pge->GetTextSizeProp(text) * text_scale;
     }
 
+    void FUI_Element::add_texture(olc::Decal* txtr, std::vector<olc::vi2d> texture_pos, olc::vi2d s, olc::vf2d scale = { 1.0f, 1.0f })
+    {
+        texture = txtr;
+        texture_positions = texture_pos;
+        texture_scale = scale;
+        texture_size = s;
+        size = { std::lround(s.x * scale.x), std::lround(s.y * scale.y) };
+        has_textures = true;
+    }
+
     /*
     ####################################################
     #               FUI_LABEL START                    #
@@ -1081,25 +1099,42 @@ namespace olc
             adaptive_position = olc::vi2d(0, 0);
 
         auto absolute_position = adaptive_position + position;
-        auto text_size = pge->GetTextSizeProp(text) * text_scale;
 
-        // Draw the body of the button
-        switch (state)
+        if (has_textures)
         {
-        case State::NONE:
-            pge->FillRectDecal(absolute_position, size, color_scheme.button_normal);
-            break;
-        case State::HOVER:
-            pge->FillRectDecal(absolute_position, size, color_scheme.button_hover);
-            break;
-        case State::CLICK:
-            pge->FillRectDecal(absolute_position, size, color_scheme.button_click);
-            break;
+            // Draw the body of the button
+            switch (state)
+            {
+            case State::NONE:
+                pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
+            case State::HOVER:
+                if (texture_positions.size() > 1)
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::HOVER)], texture_size, texture_scale);
+                else
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
+            }
         }
-        // Draw the text
-        olc::vf2d text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2),
-            absolute_position.y + (size.y / 2) - (text_size.y / 2));
-        pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
+        else
+        {
+            auto text_size = pge->GetTextSizeProp(text) * text_scale;
+
+            // Draw the body of the button
+            switch (state)
+            {
+            case State::NONE:
+                pge->FillRectDecal(absolute_position, size, color_scheme.button_normal);
+                break;
+            case State::HOVER:
+                pge->FillRectDecal(absolute_position, size, color_scheme.button_hover);
+                break;
+            }
+            // Draw the text
+            olc::vf2d text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2),
+                absolute_position.y + (size.y / 2) - (text_size.y / 2));
+            pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
+        }
     }
 
     void FUI_Button::input(olc::PixelGameEngine* pge)
@@ -1379,21 +1414,12 @@ namespace olc
             if (is_open && (max_display_items < elements.size()))
             {
                 float scroll_size =  (size.y + active_size.y) / (elements.size() - max_display_items);
-                float scroll_y_pos = ((item_start_index - 1) * scroll_size) - scroll_size;
+                float scroll_y_pos = ((item_start_index - 1) * scroll_size);
+                scroll_y_pos = scroll_y_pos - (scroll_y_pos / (elements.size() - max_display_items));
 
-                if (item_start_index - 1 > 0)
-                {
-                    pge->FillRectDecal({ absolute_position.x + size.x - 3, absolute_position.y + scroll_y_pos },
-                        { 3, scroll_size }, color_scheme.scroll_indicator);
-                }
-                else
-                {
-                    auto arrow_size = pge->GetTextSizeProp("V");
-                    pge->FillRectDecal({ absolute_position.x + size.x - (arrow_size.x / 2) - 1, absolute_position.y + (size.y / 2) - (arrow_size.y / 2) + 2 },
-                        { 1, 6 }, color_scheme.scroll_indicator);
-                    pge->DrawStringPropDecal({ absolute_position.x + (size.x - arrow_size.x), absolute_position.y + (size.y / 2 )},
-                        "V", color_scheme.scroll_indicator);
-                }
+                pge->FillRectDecal({ absolute_position.x + size.x - 3, absolute_position.y + scroll_y_pos },
+                    { 3, scroll_size }, color_scheme.scroll_indicator);
+
             }
         }
         else
@@ -1676,21 +1702,11 @@ namespace olc
             if (is_open && (max_display_items < elements.size()))
             {
                 float scroll_size = (size.y + active_size.y) / (elements.size() - max_display_items);
-                float scroll_y_pos = ((item_start_index - 1) * scroll_size) - scroll_size;
+                float scroll_y_pos = ((item_start_index - 1) * scroll_size);
+                scroll_y_pos = scroll_y_pos - (scroll_y_pos / (elements.size() - max_display_items));
 
-                if (item_start_index - 1 > 0)
-                {
-                    pge->FillRectDecal({ absolute_position.x + size.x - 3, absolute_position.y + scroll_y_pos },
-                        { 3, scroll_size }, color_scheme.scroll_indicator);
-                }
-                else
-                {
-                    auto arrow_size = pge->GetTextSizeProp("V");
-                    pge->FillRectDecal({ absolute_position.x + size.x - (arrow_size.x / 2) - 1, absolute_position.y + (size.y / 2) - (arrow_size.y / 2) + 2 },
-                        { 1, 6 }, color_scheme.scroll_indicator);
-                    pge->DrawStringPropDecal({ absolute_position.x + (size.x - arrow_size.x), absolute_position.y + (size.y / 2) },
-                        "V", color_scheme.scroll_indicator);
-                }
+                pge->FillRectDecal({ absolute_position.x + size.x - 3, absolute_position.y + scroll_y_pos },
+                    { 3, scroll_size }, color_scheme.scroll_indicator);
             }
         }
         else
