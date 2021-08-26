@@ -76,10 +76,12 @@ namespace olc
         // button colors
         olc::Pixel button_normal = olc::GREY;
         olc::Pixel button_hover = { 150, 150, 150 };
-        olc::Pixel button_click = { 100, 100, 100 };
+        olc::Pixel button_click = { 120, 120, 120 };
+        olc::Pixel button_active = { 100, 100, 100 };
         // checkbox colors
         olc::Pixel checkbox_normal = olc::GREY;
         olc::Pixel checkbox_hover = { 150, 150, 150 };
+        olc::Pixel checkbox_click = { 120, 120, 120 };
         olc::Pixel checkbox_active = { 100, 100, 100 };
         // dropdown colors
         olc::Pixel dropdown_normal = olc::GREY;
@@ -318,12 +320,13 @@ namespace olc
         {
             NONE = 0,
             HOVER,
-            CLICK
+            CLICK,
+            ACTIVE
         };
 
         std::function<void()> callback;
         State state = State::NONE;
-
+        bool was_active = false;
     public:
         FUI_Button(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
         FUI_Button(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
@@ -342,11 +345,13 @@ namespace olc
         {
             NONE = 0,
             HOVER,
+            CLICK,
             ACTIVE
         };
 
         bool* checkbox_state;
         State state = State::NONE;
+        bool was_active = false;
     public:
         FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
         FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
@@ -1138,6 +1143,9 @@ namespace olc
             case State::CLICK:
                 pge->FillRectDecal(absolute_position, size, color_scheme.button_click);
                 break;
+            case State::ACTIVE:
+                pge->FillRectDecal(absolute_position, size, color_scheme.button_active);
+                break;
             }
             // Draw the text
             olc::vf2d text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2),
@@ -1175,18 +1183,31 @@ namespace olc
             {
                 if (pge->GetMouse(0).bPressed)
                 {
-                    if (state == State::CLICK)
-                        state = State::NONE;
-                    else
-                        state = State::CLICK;
+                    if (state == State::ACTIVE)
+                        was_active = true;
+
+                    state = State::CLICK;
                 }
-                else if (state != State::CLICK)
+                else if (pge->GetMouse(0).bReleased && state == State::CLICK)
+                {
+                    if (was_active)
+                    {
+                        state = State::HOVER;
+                        was_active = false;
+                    }
+                    else
+                        state = State::ACTIVE;
+                }
+
+                if (state != State::CLICK && state != State::ACTIVE)
                     state = State::HOVER;
             }
-            else if (state != State::CLICK)
+            else if (state == State::CLICK && was_active)
+                state = State::ACTIVE;
+            else if (state != State::ACTIVE)
                 state = State::NONE;
 
-            if (state == State::CLICK)
+            if (state == State::ACTIVE)
                 *toggle_button_state = true;
             else
                 *toggle_button_state = false;
@@ -1264,15 +1285,16 @@ namespace olc
         switch (state)
         {
         case State::NONE:
-            *checkbox_state = false;
             break;
         case State::HOVER:
-            *checkbox_state = false;
             pge->FillRectDecal(absolute_position + checkbox_filling,
                 { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_hover);
             break;
+        case State::CLICK:
+            pge->FillRectDecal(absolute_position + checkbox_filling,
+                { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_click);
+            break;
         case State::ACTIVE:
-            *checkbox_state = true;
             pge->FillRectDecal(absolute_position + checkbox_filling,
                 { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_active);
             break;
@@ -1289,15 +1311,33 @@ namespace olc
             if (pge->GetMouse(0).bPressed)
             {
                 if (state == State::ACTIVE)
-                    state = State::NONE;
+                    was_active = true;
+
+                state = State::CLICK;
+            }
+            else if (pge->GetMouse(0).bReleased && state == State::CLICK)
+            {
+                if (was_active)
+                {
+                    state = State::HOVER;
+                    was_active = false;
+                }
                 else
                     state = State::ACTIVE;
             }
-            else if (state != State::ACTIVE)
+
+            if (state != State::CLICK && state != State::ACTIVE)
                 state = State::HOVER;
         }
+        else if (state == State::CLICK && was_active)
+            state = State::ACTIVE;
         else if (state != State::ACTIVE)
             state = State::NONE;
+
+        if (state == State::ACTIVE)
+            *checkbox_state = true;
+        else
+            *checkbox_state = false;
     }
 
     /*
