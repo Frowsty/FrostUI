@@ -299,7 +299,7 @@ namespace olc
 
         olc::vi2d get_text_size(olc::PixelGameEngine* pge);
 
-        void add_texture(olc::Decal* texture, std::vector<olc::vi2d> texture_positions, olc::vi2d size, olc::vf2d scale);
+        void add_texture(olc::Decal* texture, std::vector<olc::vi2d> texture_positions, olc::vi2d size);
     };
 
     class FUI_Label : public FUI_Element
@@ -981,14 +981,30 @@ namespace olc
         return pge->GetTextSizeProp(text) * text_scale;
     }
 
-    void FUI_Element::add_texture(olc::Decal* txtr, std::vector<olc::vi2d> texture_pos, olc::vi2d s, olc::vf2d scale = { 1.0f, 1.0f })
+    void FUI_Element::add_texture(olc::Decal* txtr, std::vector<olc::vi2d> texture_pos, olc::vi2d s)
     {
         texture = txtr;
         texture_positions = texture_pos;
-        texture_scale = scale;
         texture_size = s;
-        size = { std::lround(s.x * scale.x), std::lround(s.y * scale.y) };
+
+        texture_scale = { (float)size.x / (float)s.x, (float)size.y / (float)s.y };
+        size = { std::lround(s.x * texture_scale.x), std::lround(s.y * texture_scale.y) };
         has_textures = true;
+
+        // warning messages
+        switch(ui_type)
+        {
+        case FUI_Type::BUTTON:
+            if (toggle_button_state)
+            {
+                if (texture_positions.size() < 4)
+                    std::cout << "There's not enough sprites to cover all toggle button states\n";
+            }
+            else
+                if (texture_positions.size() < 3)
+                    std::cout << "There's not enough sprites to cover all button states\n";
+            break;
+        }
     }
 
     /*
@@ -1124,6 +1140,13 @@ namespace olc
                     pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::CLICK)], texture_size, texture_scale);
                 else
                     pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
+            case State::ACTIVE:
+                if (texture_positions.size() > 3)
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::CLICK)], texture_size, texture_scale);
+                else
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
                 break;
             }
         }
