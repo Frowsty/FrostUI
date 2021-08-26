@@ -1114,6 +1114,12 @@ namespace olc
                 else
                     pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
                 break;
+            case State::CLICK:
+                if (texture_positions.size() > 2)
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::CLICK)], texture_size, texture_scale);
+                else
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
             }
         }
         else
@@ -1128,6 +1134,9 @@ namespace olc
                 break;
             case State::HOVER:
                 pge->FillRectDecal(absolute_position, size, color_scheme.button_hover);
+                break;
+            case State::CLICK:
+                pge->FillRectDecal(absolute_position, size, color_scheme.button_click);
                 break;
             }
             // Draw the text
@@ -1147,8 +1156,11 @@ namespace olc
                 pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
             {
                 if (pge->GetMouse(0).bPressed)
+                    state = State::CLICK;
+                else if (pge->GetMouse(0).bReleased && state == State::CLICK)
                     callback();
-                else
+                
+                if (state != State::CLICK)
                     state = State::HOVER;
             }
             else
@@ -1373,6 +1385,9 @@ namespace olc
         case DropdownState::HOVER:
             pge->FillRectDecal(absolute_position, size, color_scheme.dropdown_hover);
             break;
+        case DropdownState::ACTIVE:
+            pge->FillRectDecal(absolute_position, size, color_scheme.dropdown_active);
+            break;
         }
         if (active_size.y != size.y * elements.size())
             pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
@@ -1400,6 +1415,9 @@ namespace olc
                         break;
                     case DropdownState::HOVER:
                         pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
+                        break;
+                    case DropdownState::ACTIVE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_active);
                         break;
                     }
                 }
@@ -1438,6 +1456,9 @@ namespace olc
                     case DropdownState::HOVER:
                         pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
                         break;
+                    case DropdownState::ACTIVE:
+                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_active);
+                        break;
                     }
                 }
                 text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
@@ -1462,20 +1483,32 @@ namespace olc
                 selected_element.second.second.clear();
 
             if (pge->GetMouse(0).bPressed)
+                state = DropdownState::ACTIVE;
+            else if (pge->GetMouse(0).bReleased && state == DropdownState::ACTIVE)
             {
-                if (is_open)
-                    is_open = false;
-                else
-                    is_open = true;
+                is_open = !is_open;
+                state = DropdownState::HOVER;
             }
-            else
+
+            if (state != DropdownState::ACTIVE)
                 state = DropdownState::HOVER;
         }
         else
         {
             state = DropdownState::NONE;
-            if (pge->GetMouse(0).bPressed)
-                could_close = true;
+            int element_amount;
+            if (max_display_items > 0)
+                element_amount = max_display_items;
+            else
+                element_amount = elements.size();
+            if (!(pge->GetMousePos().x >= adaptive_position.x + position.x &&
+                pge->GetMousePos().x <= adaptive_position.x + position.x + size.x &&
+                pge->GetMousePos().y >= adaptive_position.y + position.y &&
+                pge->GetMousePos().y <= adaptive_position.y + position.y + size.y + (size.y * element_amount)))
+            {
+                if (pge->GetMouse(0).bPressed)
+                    could_close = true;
+            }
         }
 
 
@@ -1492,12 +1525,15 @@ namespace olc
                         pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
                     {
                         if (pge->GetMouse(0).bPressed)
+                            elements[j].second.first = DropdownState::ACTIVE;
+                        else if (pge->GetMouse(0).bReleased && elements[j].second.first == DropdownState::ACTIVE)
                         {
                             selected_element.first = elements[j].first;
                             selected_element.second = elements[j].second.second;
+                            elements[j].second.first = DropdownState::HOVER;
                             is_open = false;
                         }
-                        else
+                        else if (elements[j].second.first != DropdownState::ACTIVE)
                             elements[j].second.first = DropdownState::HOVER;
                     }
                     else
@@ -1539,12 +1575,15 @@ namespace olc
                         pge->GetMousePos().y < adaptive_position.y + position.y + (size.y * i) + size.y)
                     {
                         if (pge->GetMouse(0).bPressed)
+                            element.second.first = DropdownState::ACTIVE;
+                        else if (pge->GetMouse(0).bReleased && element.second.first == DropdownState::ACTIVE)
                         {
                             selected_element.first = element.first;
                             selected_element.second = element.second.second;
+                            element.second.first = DropdownState::HOVER;
                             is_open = false;
                         }
-                        else
+                        else if (element.second.first != DropdownState::ACTIVE)
                             element.second.first = DropdownState::HOVER;
                     }
                     else
