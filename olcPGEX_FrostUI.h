@@ -989,7 +989,7 @@ namespace olc
         texture_positions = texture_pos;
         texture_size = s;
 
-        texture_scale = { (float)size.x / (float)s.x, (float)size.y / (float)s.y };
+        texture_scale = { static_cast<float>(size.x) / static_cast<float>(s.x), static_cast<float>(size.y) / static_cast<float>(s.y) };
         size = { std::lround(s.x * texture_scale.x), std::lround(s.y * texture_scale.y) };
         has_textures = true;
 
@@ -2488,13 +2488,13 @@ namespace olc
                 return i;
             }
         }
-        return (int)TextKey::None;
+        return static_cast<int>(TextKey::None);
     }
 
     std::string FUI_Inputfield::get_char_from_id(olc::PixelGameEngine* pge)
     {
         int index = get_char_id(pge);
-        if (index == (int)TextKey::None) return "";
+        if (index == static_cast<int>(TextKey::None)) return "";
 
         if (pge->GetKey(olc::SHIFT).bHeld) {
             return std::string(1, text_shift[index]);
@@ -2517,6 +2517,7 @@ namespace olc
         // title text
         auto text_position = olc::vf2d(absolute_position.x - title_text_size.x, absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
         auto timer = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        auto cursor_size = pge->GetTextSizeProp("_");
 
         pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
@@ -2525,7 +2526,7 @@ namespace olc
         // background
         pge->FillRectDecal(absolute_position + olc::vf2d(1.0f, 1.0f), size - olc::vf2d(2.0f, 2.0f), color_scheme.inputfield_background);
         if (select_all)
-            pge->FillRectDecal(absolute_position, olc::vf2d(pge->GetTextSizeProp(displayed_text).x * text_scale.x, size.y), color_scheme.inputfield_select_all_background);
+            pge->FillRectDecal(absolute_position, olc::vf2d(display_text_size.x * text_scale.x, size.y), color_scheme.inputfield_select_all_background);
         
         // render the text ( + 3 in text_position is used as an offset to not render the first letter inside of the outline)
         text_position = olc::vf2d(absolute_position.x + 3, absolute_position.y + (size.y / 2) - (display_text_size.y / 2));
@@ -2547,8 +2548,8 @@ namespace olc
 
         pge->DrawStringPropDecal(text_position, displayed_text, text_color, input_scale);
 
-        if (cursor_position.x + (pge->GetTextSizeProp("_").x * input_scale.x) > absolute_position.x + size.x)
-            cursor_position.x -= (cursor_position.x + (pge->GetTextSizeProp("_").x * input_scale.x)) - (absolute_position.x + size.x);
+        if (cursor_position.x + (cursor_size.x * input_scale.x) > absolute_position.x + size.x)
+            cursor_position.x -= (cursor_position.x + (cursor_size.x * input_scale.x)) - (absolute_position.x + size.x);
 
         if (state == State::ACTIVE)
         {
@@ -2556,7 +2557,7 @@ namespace olc
             {
                 if (timer - last_cursor_tick > 1500)
                     last_cursor_tick = timer;
-                pge->FillRectDecal(cursor_position, { pge->GetTextSizeProp("_").x * input_scale.x, 1 }, color_scheme.inputfield_cursor);
+                pge->FillRectDecal(cursor_position, { cursor_size.x * input_scale.x, 1 }, color_scheme.inputfield_cursor);
             }
         }
     }
