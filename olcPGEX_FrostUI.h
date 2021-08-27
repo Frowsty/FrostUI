@@ -483,6 +483,8 @@ namespace olc
         std::string text_out_of_view;
         std::string displayed_text;
 
+        long long last_cursor_tick = 0;
+
     public:
         FUI_Inputfield(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
         FUI_Inputfield(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
@@ -2511,28 +2513,23 @@ namespace olc
 
         auto absolute_position = adaptive_position + position;
         auto title_text_size = pge->GetTextSizeProp(text) * text_scale;
-        auto display_text_size = pge->GetTextSizeProp(displayed_text) * input_scale;
+        auto display_text_size = pge->GetTextSizeProp(displayed_text) * input_scale + olc::vf2d(2.f, 0.f);
         // title text
         auto text_position = olc::vf2d(absolute_position.x - title_text_size.x, absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
+        auto timer = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
         pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
+        // outline
+        pge->FillRectDecal(absolute_position, size, color_scheme.inputfield_outline);
         // background
-        pge->FillRectDecal(absolute_position, size, color_scheme.inputfield_background);
+        pge->FillRectDecal(absolute_position + olc::vf2d(1.0f, 1.0f), size - olc::vf2d(2.0f, 2.0f), color_scheme.inputfield_background);
         if (select_all)
             pge->FillRectDecal(absolute_position, olc::vf2d(pge->GetTextSizeProp(displayed_text).x * text_scale.x, size.y), color_scheme.inputfield_select_all_background);
-        // top left outline
-        pge->FillRectDecal(absolute_position, olc::vf2d(size.x, 1), color_scheme.inputfield_outline);
-        // left outline
-        pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.inputfield_outline);
-        // right outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x, absolute_position.y), olc::vi2d(1, size.y), color_scheme.inputfield_outline);
-        // bottom outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x + 1, 1), color_scheme.inputfield_outline);
-
-        // render the text ( + 2 in text_position is used as an offset to not render the first letter inside of the outline)
-        text_position = olc::vf2d(absolute_position.x + 2, absolute_position.y + (size.y / 2) - (display_text_size.y / 2));
-        auto cursor_position = olc::vf2d(text_position.x + display_text_size.x, absolute_position.y + size.y - 2);
+        
+        // render the text ( + 3 in text_position is used as an offset to not render the first letter inside of the outline)
+        text_position = olc::vf2d(absolute_position.x + 3, absolute_position.y + (size.y / 2) - (display_text_size.y / 2));
+        auto cursor_position = olc::vf2d(text_position.x + display_text_size.x, text_position.y + display_text_size.y);
 
         if (display_text_size.x <= size.x && inputfield_text.size() > old_inputfield_text.size())
         {
@@ -2542,7 +2539,7 @@ namespace olc
                 displayed_text += inputfield_text.back();
             old_inputfield_text = inputfield_text;
         }
-        else if (display_text_size.x >= size.x)
+        else if (display_text_size.x >= size.x - 1)
         {
             text_out_of_view.push_back(displayed_text.front());
             displayed_text.erase(0, 1);
@@ -2555,8 +2552,12 @@ namespace olc
 
         if (state == State::ACTIVE)
         {
-            //std::cout << "Drawing cursor: " + identifier << "\n";
-            pge->FillRectDecal(cursor_position, { pge->GetTextSizeProp("_").x * input_scale.x, 1 }, color_scheme.inputfield_cursor);
+            if (timer - last_cursor_tick > 500)
+            {
+                if (timer - last_cursor_tick > 1500)
+                    last_cursor_tick = timer;
+                pge->FillRectDecal(cursor_position, { pge->GetTextSizeProp("_").x * input_scale.x, 1 }, color_scheme.inputfield_cursor);
+            }
         }
     }
 
@@ -2568,7 +2569,10 @@ namespace olc
             pge->GetMousePos().y <= adaptive_position.y + position.y + size.y)
         {
             if (pge->GetMouse(0).bPressed)
+            {
                 is_focused = true;
+                last_cursor_tick = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - 500;
+            }
         }
         else if (pge->GetMouse(0).bPressed && is_focused)
             is_focused = false;
