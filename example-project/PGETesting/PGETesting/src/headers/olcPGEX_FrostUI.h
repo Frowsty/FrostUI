@@ -124,9 +124,9 @@ namespace olc
     private:
         olc::PixelGameEngine* pge;
 
-        olc::vi2d position;
+        olc::vf2d position;
         olc::vi2d mouse_difference;
-        olc::vi2d size;
+        olc::vf2d size;
         std::string title;
 
         FUI_Window* overlapping_window;
@@ -151,8 +151,8 @@ namespace olc
 
         std::string identifier;
 
-        int top_border_thickness = 20;
-        int border_thickness = 5;
+        float top_border_thickness = 20;
+        float border_thickness = 5;
 
     public:
         FUI_Window(olc::PixelGameEngine* pge, const std::string& identifier, olc::vi2d position, olc::vi2d size, const std::string& title);
@@ -161,21 +161,21 @@ namespace olc
 
         void input(std::deque<FUI_Window*> windows);
 
-        olc::vi2d get_position() const;
+        olc::vf2d get_position() const;
 
-        olc::vi2d get_size() const;
+        olc::vf2d get_size() const;
 
-        olc::vi2d get_window_space() const;
+        olc::vf2d get_window_space() const;
 
         std::string get_id() const;
 
-        int get_top_border_thickness() const;
+        float get_top_border_thickness() const;
 
-        int get_border_thickness() const;
+        float get_border_thickness() const;
 
-        void set_top_border_thickness(int thickness);
+        void set_top_border_thickness(float thickness);
 
-        void set_border_thickness(int thickness);
+        void set_border_thickness(float thickness);
 
         void close_window(bool close);
 
@@ -202,8 +202,8 @@ namespace olc
             ACTIVE
         };
         FUI_Window* parent = nullptr;
-        olc::vi2d size;
-        olc::vi2d position;
+        olc::vf2d size;
+        olc::vf2d position;
         olc::vf2d adaptive_position;
         std::string text;
         std::string group;
@@ -279,7 +279,7 @@ namespace olc
 
         std::vector<int> get_selected_items();
 
-        const olc::vi2d get_position() const;
+        const olc::vf2d get_position() const;
 
         void set_default_item(const int& item);
 
@@ -366,7 +366,7 @@ namespace olc
     class FUI_Dropdown : public FUI_Element
     {
     private:
-        olc::vf2d active_size = olc::vf2d(0, 0);
+        olc::vf2d active_size = olc::vf2d{ 0.f, 0.f };
         DropdownState state = DropdownState::NONE;
         bool is_open = false;
         int item_start_index = 1;
@@ -384,7 +384,7 @@ namespace olc
     class FUI_Combolist : public FUI_Element
     {
     private:
-        olc::vf2d active_size = olc::vf2d(0, 0);
+        olc::vf2d active_size = olc::vf2d{ 0.f, 0.f };
         DropdownState state = DropdownState::NONE;
         bool is_open = false;
         int item_start_index = 1;
@@ -604,21 +604,21 @@ namespace olc
         title = txt;
     }
 
-    olc::vi2d FUI_Window::get_position() const { return position; }
+    olc::vf2d FUI_Window::get_position() const { return position; }
 
-    olc::vi2d FUI_Window::get_size() const { return size; }
+    olc::vf2d FUI_Window::get_size() const { return size; }
 
-    olc::vi2d FUI_Window::get_window_space() const { return olc::vi2d(size.x - border_thickness * 2, size.y - top_border_thickness); }
+    olc::vf2d FUI_Window::get_window_space() const { return olc::vf2d{ size.x - border_thickness * 2, size.y - top_border_thickness }; }
 
     std::string FUI_Window::get_id() const { return identifier; }
 
-    int FUI_Window::get_top_border_thickness() const { return top_border_thickness; }
+    float FUI_Window::get_top_border_thickness() const { return top_border_thickness; }
 
-    int FUI_Window::get_border_thickness() const { return border_thickness; }
+    float FUI_Window::get_border_thickness() const { return border_thickness; }
 
-    void FUI_Window::set_top_border_thickness(int thickness) { top_border_thickness = thickness; }
+    void FUI_Window::set_top_border_thickness(float thickness) { top_border_thickness = thickness; }
 
-    void FUI_Window::set_border_thickness(int thickness) { border_thickness = thickness; }
+    void FUI_Window::set_border_thickness(float thickness) { border_thickness = thickness; }
 
     void FUI_Window::close_window(bool close) { should_render = !close; }
 
@@ -640,18 +640,18 @@ namespace olc
         pge->FillRectDecal(position, size, color_scheme.window_background_color);
 
         // Draw the window border
-        pge->FillRectDecal(position, olc::vf2d(border_thickness, size.y), color_scheme.window_border_color); // Left side
-        pge->FillRectDecal(olc::vf2d(position.x + size.x - border_thickness, position.y), olc::vf2d(border_thickness, size.y), color_scheme.window_border_color); // Right side
-        pge->FillRectDecal(olc::vf2d(position.x, position.y + size.y - border_thickness), olc::vf2d(size.x, border_thickness), color_scheme.window_border_color); // Bottom side
-        pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), color_scheme.window_border_color); // Top bar
+        pge->FillRectDecal(position, olc::vf2d{ border_thickness, size.y }, color_scheme.window_border_color); // Left side
+        pge->FillRectDecal(olc::vf2d{ position.x + size.x - border_thickness, position.y }, olc::vf2d{ border_thickness, size.y }, color_scheme.window_border_color); // Right side
+        pge->FillRectDecal(olc::vf2d{ position.x, position.y + size.y - border_thickness }, olc::vf2d{ size.x, border_thickness }, color_scheme.window_border_color); // Bottom side
+        pge->FillRectDecal(position, olc::vf2d{ size.x, top_border_thickness }, color_scheme.window_border_color); // Top bar
 
         // Draw the window title
-        olc::vf2d title_position = olc::vf2d(position.x + (size.x / 2) - (pge->GetTextSizeProp(title).x / 2), position.y + (top_border_thickness / 2) - (pge->GetTextSizeProp(title).y / 2));
+        olc::vf2d title_position = olc::vf2d{ position.x + (size.x / 2) - (pge->GetTextSizeProp(title).x / 2), position.y + (top_border_thickness / 2) - (pge->GetTextSizeProp(title).y / 2) };
         pge->DrawStringPropDecal(title_position, title, olc::BLACK);
 
         // Draw the default window close button
-        olc::vi2d temp_pos = { position.x + size.x - (size.x / 10), position.y };
-        olc::vi2d temp_size = { size.x / 10, top_border_thickness };
+        olc::vf2d temp_pos = { position.x + size.x - (size.x / 10), position.y };
+        olc::vf2d temp_size = { size.x / 10, top_border_thickness };
         switch (state)
         {
         case button_state::NORMAL:
@@ -664,12 +664,12 @@ namespace olc
             pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_click);
             break;
         }
-        olc::vf2d close_position = olc::vf2d(temp_pos.x + (temp_size.x / 2) - (pge->GetTextSizeProp("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSizeProp("X").y / 2));
+        olc::vf2d close_position = olc::vf2d{ temp_pos.x + (temp_size.x / 2) - (pge->GetTextSizeProp("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSizeProp("X").y / 2) };
         pge->DrawStringPropDecal(close_position, "X", olc::BLACK);
 
         // Override top border with a darker color when window is inactive 
         if (!focused)
-            pge->FillRectDecal(position, olc::vf2d(size.x, top_border_thickness), { 100, 100, 100, 150 }); // Top bar
+            pge->FillRectDecal(position, olc::vf2d{ size.x, top_border_thickness }, { 100, 100, 100, 150 }); // Top bar
     }
 
     void FUI_Window::input(std::deque<FUI_Window*> windows)
@@ -918,7 +918,7 @@ namespace olc
         return return_selected_items;
     }
 
-    const olc::vi2d FUI_Element::get_position() const
+    const olc::vf2d FUI_Element::get_position() const
     {
         return position;
     }
@@ -990,7 +990,7 @@ namespace olc
         texture_size = s;
 
         texture_scale = { static_cast<float>(size.x) / static_cast<float>(s.x), static_cast<float>(size.y) / static_cast<float>(s.y) };
-        size = { std::lround(s.x * texture_scale.x), std::lround(s.y * texture_scale.y) };
+        size = { std::round(s.x * texture_scale.x), std::round(s.y * texture_scale.y) };
         has_textures = true;
 
         // warning messages
@@ -1054,9 +1054,9 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = adaptive_position + position;
 
@@ -1117,9 +1117,9 @@ namespace olc
 
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = adaptive_position + position;
 
@@ -1173,8 +1173,8 @@ namespace olc
                 break;
             }
             // Draw the text
-            olc::vf2d text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2),
-                absolute_position.y + (size.y / 2) - (text_size.y / 2));
+            olc::vf2d text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (text_size.x / 2),
+                absolute_position.y + (size.y / 2) - (text_size.y / 2) };
             pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
         }
     }
@@ -1292,20 +1292,20 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = adaptive_position + position;
 
         // Draw the text
         auto text_size = pge->GetTextSizeProp(text) * text_scale;
-        auto text_position = olc::vf2d(absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2));
+        auto text_position = olc::vf2d{ absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2) };
         pge->FillRectDecal(absolute_position, size, color_scheme.checkbox_normal);
 
         pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
-        olc::vf2d checkbox_filling = olc::vf2d(1.0f, 1.0f);
+        olc::vf2d checkbox_filling = olc::vf2d{ 1.0f, 1.0f };
         // Draw the body of the checkbox
         switch (state)
         {
@@ -1414,9 +1414,9 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = adaptive_position + position;
         auto title_text_size = pge->GetTextSizeProp(text) * text_scale;
@@ -1438,8 +1438,8 @@ namespace olc
         }
 
         // title position
-        olc::vf2d text_position = olc::vf2d(absolute_position.x - title_text_size.x,
-            absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
+        olc::vf2d text_position = olc::vf2d{ absolute_position.x - title_text_size.x,
+            absolute_position.y + (size.y / 2) - (title_text_size.y / 2) };
         pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
         switch (state)
@@ -1455,13 +1455,13 @@ namespace olc
             break;
         }
         if (active_size.y != size.y * elements.size())
-            pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
+            pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y }, olc::vf2d{ size.x, active_size.y }, color_scheme.dropdown_normal);
 
         if (!selected_element.second.second.empty())
         {
             auto element_text_size = pge->GetTextSizeProp(selected_element.second.second) * selected_element.second.first;
-            text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                absolute_position.y + (size.y / 2) - (element_text_size.y / 2));
+            text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                absolute_position.y + (size.y / 2) - (element_text_size.y / 2) };
             pge->DrawStringPropDecal(text_position, selected_element.second.second, text_color, selected_element.second.first);
         }
 
@@ -1476,18 +1476,18 @@ namespace olc
                     switch (elements[j].second.first)
                     {
                     case DropdownState::NONE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.dropdown_normal);
                         break;
                     case DropdownState::HOVER:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.dropdown_hover);
                         break;
                     case DropdownState::ACTIVE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_active);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.dropdown_active);
                         break;
                     }
                 }
-                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2) };
                 if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
                     pge->DrawStringPropDecal(text_position, elements[j].second.second.second, text_color, elements[j].second.second.first);
 
@@ -1516,18 +1516,18 @@ namespace olc
                     switch (element.second.first)
                     {
                     case DropdownState::NONE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_normal);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.dropdown_normal);
                         break;
                     case DropdownState::HOVER:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_hover);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.dropdown_hover);
                         break;
                     case DropdownState::ACTIVE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.dropdown_active);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.dropdown_active);
                         break;
                     }
                 }
-                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2) };
                 if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
                     pge->DrawStringPropDecal(text_position, element.second.second.second, text_color, element.second.second.first);
 
@@ -1717,9 +1717,9 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = adaptive_position + position;
         auto title_text_size = pge->GetTextSizeProp(text) * text_scale;
@@ -1741,8 +1741,8 @@ namespace olc
         }
 
         // title position
-        olc::vf2d text_position = olc::vf2d(absolute_position.x - title_text_size.x,
-            absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
+        olc::vf2d text_position = olc::vf2d{ absolute_position.x - title_text_size.x,
+            absolute_position.y + (size.y / 2) - (title_text_size.y / 2) };
         pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
 
         switch (state)
@@ -1755,23 +1755,23 @@ namespace olc
             break;
         }
         if (active_size.y != size.y * elements.size())
-            pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y), olc::vf2d(size.x, active_size.y), color_scheme.dropdown_normal);
+            pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y }, olc::vf2d{ size.x, active_size.y }, color_scheme.dropdown_normal);
 
         if (selected_elements.size() > 1)
         {
             std::string temp_text = selected_elements[0].second.second + ", ...";
             auto element_text_size = pge->GetTextSizeProp(temp_text) * selected_elements[0].second.first;
 
-            text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                absolute_position.y + (size.y / 2) - (element_text_size.y / 2));
+            text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                absolute_position.y + (size.y / 2) - (element_text_size.y / 2) };
             pge->DrawStringPropDecal(text_position, temp_text, text_color, selected_elements[0].second.first);
         }
         else if (selected_elements.size() > 0)
         {
             auto element_text_size = pge->GetTextSizeProp(selected_elements[0].second.second) * selected_elements[0].second.first;
 
-            text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                absolute_position.y + (size.y / 2) - (element_text_size.y / 2));
+            text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                absolute_position.y + (size.y / 2) - (element_text_size.y / 2) };
             pge->DrawStringPropDecal(text_position, selected_elements[0].second.second, text_color, selected_elements[0].second.first);
         }
 
@@ -1786,18 +1786,18 @@ namespace olc
                     switch (elements[j].second.first)
                     {
                     case DropdownState::NONE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.combolist_normal);
                         break;
                     case DropdownState::HOVER:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.combolist_hover);
                         break;
                     case DropdownState::ACTIVE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.combolist_active);
                         break;
                     }
                 }
-                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2) };
                 if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
                     pge->DrawStringPropDecal(text_position, elements[j].second.second.second, text_color, elements[j].second.second.first);
                 i++;
@@ -1824,18 +1824,18 @@ namespace olc
                     switch (element.second.first)
                     {
                     case DropdownState::NONE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_normal);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.combolist_normal);
                         break;
                     case DropdownState::HOVER:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_hover);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.combolist_hover);
                         break;
                     case DropdownState::ACTIVE:
-                        pge->FillRectDecal(absolute_position + olc::vf2d(0, size.y * i), size, color_scheme.combolist_active);
+                        pge->FillRectDecal(absolute_position + olc::vf2d{ 0.f, size.y * i }, size, color_scheme.combolist_active);
                         break;
                     }
                 }
-                text_position = olc::vf2d(absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
-                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2));
+                text_position = olc::vf2d{ absolute_position.x + (size.x / 2) - (element_text_size.x / 2),
+                    absolute_position.y + size.y + (size.y * i) - (size.y / 2) - (element_text_size.y / 2) };
                 if (absolute_position.y + size.y + active_size.y > text_position.y + element_text_size.y)
                     pge->DrawStringPropDecal(text_position, element.second.second.second, text_color, element.second.second.first);
                 i++;
@@ -2047,9 +2047,9 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = position + adaptive_position;
         auto text_size = pge->GetTextSizeProp(text) * text_scale;
@@ -2057,19 +2057,19 @@ namespace olc
         pge->FillRectDecal(absolute_position, size, color_scheme.groupbox_background);
 
         // top left outline
-        pge->FillRectDecal(absolute_position, olc::vf2d((size.x / 2) - (text_size.x / 2), 1), color_scheme.groupbox_outline);
+        pge->FillRectDecal(absolute_position, olc::vf2d{ (size.x / 2) - (text_size.x / 2), 1.f }, color_scheme.groupbox_outline);
         // top right outline
-        pge->FillRectDecal(olc::vf2d(absolute_position.x + (size.x / 2) + (text_size.x / 2), absolute_position.y),
-            olc::vf2d(size.x - (size.x / 2) - (text_size.x / 2), 1), color_scheme.groupbox_outline);
+        pge->FillRectDecal(olc::vf2d{ absolute_position.x + (size.x / 2) + (text_size.x / 2), absolute_position.y },
+            olc::vf2d{ size.x - (size.x / 2) - (text_size.x / 2), 1.f }, color_scheme.groupbox_outline);
 
         // left outline
-        pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.groupbox_outline);
+        pge->FillRectDecal(absolute_position, olc::vf2d{ 1, size.y }, color_scheme.groupbox_outline);
         // right outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x - 1, absolute_position.y), olc::vf2d(1, size.y), color_scheme.groupbox_outline);
+        pge->FillRectDecal(olc::vf2d{ absolute_position.x + size.x - 1, absolute_position.y }, olc::vf2d{ 1.f, size.y }, color_scheme.groupbox_outline);
         // bottom outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y - 1), olc::vf2d(size.x + 1, 1), color_scheme.groupbox_outline);
+        pge->FillRectDecal(olc::vf2d{ absolute_position.x, absolute_position.y + size.y - 1 }, olc::vf2d{ size.x + 1.f, 1.f }, color_scheme.groupbox_outline);
 
-        pge->DrawStringPropDecal(olc::vf2d(absolute_position.x + (size.x / 2) - (text_size.x / 2), absolute_position.y - (text_size.y / 2)), text, text_color);
+        pge->DrawStringPropDecal(olc::vf2d{ absolute_position.x + (size.x / 2) - (text_size.x / 2), absolute_position.y - (text_size.y / 2) }, text, text_color);
 
     }
 
@@ -2196,9 +2196,9 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = position + adaptive_position;
 
@@ -2271,33 +2271,33 @@ namespace olc
         }
 
         auto text_size_title = pge->GetTextSizeProp(text) * text_scale;
-        pge->DrawStringPropDecal(olc::vf2d(absolute_position.x - text_size_title.x, absolute_position.y + (size.y / 2) - (text_size_title.y / 2) + 1), text, text_color);
+        pge->DrawStringPropDecal(olc::vf2d{ absolute_position.x - text_size_title.x, absolute_position.y + (size.y / 2) - (text_size_title.y / 2) + 1 }, text, text_color);
         // draw slider body
         switch (state)
         {
         case State::NONE:
-            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * slider_ratio, size.y), color_scheme.slider_normal);
+            pge->FillRectDecal(absolute_position, olc::vf2d{ size.x * slider_ratio, size.y }, color_scheme.slider_normal);
             break;
         case State::HOVER:
-            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * slider_ratio, size.y), color_scheme.slider_hover);
+            pge->FillRectDecal(absolute_position, olc::vf2d{ size.x * slider_ratio, size.y }, color_scheme.slider_hover);
             break;
         case State::ACTIVE:
-            pge->FillRectDecal(absolute_position, olc::vf2d(size.x * slider_ratio, size.y), color_scheme.slider_hover);
+            pge->FillRectDecal(absolute_position, olc::vf2d{ size.x * slider_ratio, size.y }, color_scheme.slider_hover);
             break;
         }
 
         // Draw text ontop of the slider body
         auto text_size = pge->GetTextSizeProp(temp_text) * text_scale;
-        pge->DrawStringPropDecal(olc::vf2d(absolute_position.x + size.x / 2 - text_size.x / 2, absolute_position.y + (size.y / 2) - (text_size.y / 2) + 1), temp_text, text_color);
+        pge->DrawStringPropDecal(olc::vf2d{ absolute_position.x + size.x / 2 - text_size.x / 2, absolute_position.y + (size.y / 2) - (text_size.y / 2) + 1 }, temp_text, text_color);
 
         // top left outline
-        pge->FillRectDecal(absolute_position, olc::vf2d(size.x, 1), color_scheme.slider_outline);
+        pge->FillRectDecal(absolute_position, olc::vf2d{ size.x, 1.f }, color_scheme.slider_outline);
         // left outline
-        pge->FillRectDecal(absolute_position, olc::vi2d(1, size.y), color_scheme.slider_outline);
+        pge->FillRectDecal(absolute_position, olc::vf2d{ 1.f, size.y }, color_scheme.slider_outline);
         // right outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x + size.x - 1, absolute_position.y), olc::vi2d(1, size.y), color_scheme.slider_outline);
+        pge->FillRectDecal(olc::vf2d{ absolute_position.x + size.x - 1, absolute_position.y }, olc::vf2d{ 1.f, size.y }, color_scheme.slider_outline);
         // bottom outline
-        pge->FillRectDecal(olc::vi2d(absolute_position.x, absolute_position.y + size.y), olc::vf2d(size.x, 1), color_scheme.slider_outline);
+        pge->FillRectDecal(olc::vf2d{ absolute_position.x, absolute_position.y + size.y }, olc::vf2d{ size.x, 1.f }, color_scheme.slider_outline);
     }
 
     void FUI_Slider::input(olc::PixelGameEngine* pge)
@@ -2507,15 +2507,15 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d(parent->get_border_thickness(), parent->get_top_border_thickness()));
+            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
         else
-            adaptive_position = olc::vi2d(0, 0);
+            adaptive_position = olc::vi2d{ 0, 0 };
 
         auto absolute_position = adaptive_position + position;
         auto title_text_size = pge->GetTextSizeProp(text) * text_scale;
-        auto display_text_size = pge->GetTextSizeProp(displayed_text) * input_scale + olc::vf2d(2.f, 0.f);
+        auto display_text_size = pge->GetTextSizeProp(displayed_text) * input_scale + olc::vf2d{ 2.f, 0.f };
         // title text
-        auto text_position = olc::vf2d(absolute_position.x - title_text_size.x, absolute_position.y + (size.y / 2) - (title_text_size.y / 2));
+        auto text_position = olc::vf2d{ absolute_position.x - title_text_size.x, absolute_position.y + (size.y / 2) - (title_text_size.y / 2) };
         auto timer = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         auto cursor_size = pge->GetTextSizeProp("_");
 
@@ -2524,13 +2524,13 @@ namespace olc
         // outline
         pge->FillRectDecal(absolute_position, size, color_scheme.inputfield_outline);
         // background
-        pge->FillRectDecal(absolute_position + olc::vf2d(1.0f, 1.0f), size - olc::vf2d(2.0f, 2.0f), color_scheme.inputfield_background);
+        pge->FillRectDecal(absolute_position + olc::vf2d{ 1.0f, 1.0f }, size - olc::vf2d{ 2.0f, 2.0f }, color_scheme.inputfield_background);
         if (select_all)
             pge->FillRectDecal(absolute_position, olc::vf2d(display_text_size.x * text_scale.x, size.y), color_scheme.inputfield_select_all_background);
         
         // render the text ( + 3 in text_position is used as an offset to not render the first letter inside of the outline)
-        text_position = olc::vf2d(absolute_position.x + 3, absolute_position.y + (size.y / 2) - (display_text_size.y / 2));
-        auto cursor_position = olc::vf2d(text_position.x + display_text_size.x, text_position.y + display_text_size.y);
+        text_position = olc::vf2d{ absolute_position.x + 3, absolute_position.y + (size.y / 2) - (display_text_size.y / 2) };
+        auto cursor_position = olc::vf2d{ text_position.x + display_text_size.x, text_position.y + display_text_size.y };
 
         if (display_text_size.x <= size.x && inputfield_text.size() > old_inputfield_text.size())
         {
@@ -2557,7 +2557,7 @@ namespace olc
             {
                 if (timer - last_cursor_tick > 1500)
                     last_cursor_tick = timer;
-                pge->FillRectDecal(cursor_position, { cursor_size.x * input_scale.x, 1 }, color_scheme.inputfield_cursor);
+                pge->FillRectDecal(cursor_position, { cursor_size.x * input_scale.x, 1.f }, color_scheme.inputfield_cursor);
             }
         }
     }
