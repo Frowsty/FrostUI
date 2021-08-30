@@ -17,15 +17,9 @@ void GUI::create()
     frost_ui.find_element("resolution")->add_item("1280x720");
     frost_ui.find_element("resolution")->add_item("800x600");
     frost_ui.find_element("resolution")->add_item("640x360");
-    frost_ui.find_element("resolution")->add_item("640x360");
-    frost_ui.find_element("resolution")->add_item("1920x1080");
-    frost_ui.find_element("resolution")->add_item("1280x720");
-    frost_ui.find_element("resolution")->add_item("800x600");
-    frost_ui.find_element("resolution")->add_item("640x360");
-    frost_ui.find_element("resolution")->add_item("640x360");
     frost_ui.find_element("resolution")->set_default_item(0);
     frost_ui.find_element("resolution")->set_animation_speed(1000);
-    frost_ui.find_element("resolution")->set_max_display_items(2);
+    frost_ui.find_element("resolution")->set_max_display_items(4);
 
     frost_ui.add_dropdown("quality", "Quality: ", { 80, 40 }, { 100, 20 });
     frost_ui.find_element("quality")->add_item("High");

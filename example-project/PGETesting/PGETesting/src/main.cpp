@@ -45,7 +45,6 @@ public:
     }
 };
 
-
 int main()
 {
     SettingsPrompt* settings_prompt = new SettingsPrompt;
