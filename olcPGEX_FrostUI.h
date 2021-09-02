@@ -2354,6 +2354,12 @@ namespace olc
                 }
                 else
                     slider_value_float = range.y * slider_ratio;
+
+                if (slider_value_float < range.x)
+                    slider_value_float = range.x;
+                else if (slider_value_float > range.y)
+                    slider_value_float = range.y;
+
                 *slider_value_holder_float = slider_value_float;
                 break;
             case type::INT:
@@ -2366,6 +2372,12 @@ namespace olc
                 }
                 else
                     slider_value_int = range.y * slider_ratio;
+
+                if (slider_value_int < range.x)
+                    slider_value_int = range.x;
+                else if (slider_value_int > range.y)
+                    slider_value_int = range.y;
+
                 *slider_value_holder_int = slider_value_int;
                 break;
             }
