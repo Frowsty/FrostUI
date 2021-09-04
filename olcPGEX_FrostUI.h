@@ -975,7 +975,7 @@ namespace olc
 
     const olc::vf2d FUI_Element::get_position() const
     {
-        return parent->get_position() + position;
+        return position;
     }
 
     const olc::vf2d FUI_Element::get_absolute_position()
