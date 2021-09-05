@@ -537,6 +537,7 @@ namespace olc
         void push_focused_to_back();
 
         void push_focused_element_to_back();
+
     public:
 
         void set_active_window(const std::string& window_id);
@@ -1118,7 +1119,7 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -1181,7 +1182,7 @@ namespace olc
 
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -1356,7 +1357,7 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -1478,7 +1479,7 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -1781,7 +1782,7 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -2111,7 +2112,7 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -2260,7 +2261,7 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -2583,7 +2584,7 @@ namespace olc
     {
         // Adapt positioning depending on if there's a parent to the element or not
         if (parent)
-            adaptive_position = (parent->get_position() + olc::vf2d{ parent->get_border_thickness(), parent->get_top_border_thickness() });
+            adaptive_position = get_absolute_position();
         else
             adaptive_position = olc::vi2d{ 0, 0 };
 
@@ -2715,6 +2716,8 @@ namespace olc
     {
         for (auto element : elements)
         {
+            if (!element->get_parent())
+                return false;
             if (windows[window_index]->get_id() != element->get_parent()->get_id())
                 continue;
             if (element->get_ui_type() == FUI_Type::DROPDOWN || element->get_ui_type() == FUI_Type::COMBOLIST)
@@ -3428,13 +3431,35 @@ namespace olc
             }
             if (!e->get_parent())
             {
-                if (trigger_pushback.second)
+                if (windows.size() > 0)
                 {
-                    if (trigger_pushback.second->get_identifier() == e->get_identifier())
-                        e->input(pge);
+                    for (auto& window : windows)
+                    {
+                        if (window->is_focused())
+                            continue;
+                        if (trigger_pushback.second)
+                        {
+                            if (trigger_pushback.second->get_identifier() == e->get_identifier())
+                            {
+                                e->input(pge);
+                            }
+                        }
+                        else
+                            e->input(pge);
+                    }
                 }
                 else
-                    e->input(pge);
+                {
+                    if (trigger_pushback.second)
+                    {
+                        if (trigger_pushback.second->get_identifier() == e->get_identifier())
+                        {
+                            e->input(pge);
+                        }
+                    }
+                    else
+                        e->input(pge);
+                }
                 e->draw(pge);
             }
         }
