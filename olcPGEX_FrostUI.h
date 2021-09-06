@@ -57,6 +57,7 @@
 #include "olcPixelGameEngine.h"
 #include <deque>
 #include <iomanip>
+#include <ctime>
 
 /*
 ####################################################
@@ -261,6 +262,7 @@ namespace olc
 
         std::function<void(std::string&, std::string*)> command_handler;
         bool should_clear_console = false;
+        std::string command_entry;
     public:
 
         virtual void draw(olc::PixelGameEngine* pge) {}
@@ -336,6 +338,8 @@ namespace olc
         void set_on_enter_callback(std::function<void()> cb);
 
         void add_command_handler(std::function<void(std::string&, std::string*)> handler);
+
+        void add_command_entry(std::string& entry);
 
         void clear_console();
     };
@@ -553,12 +557,16 @@ namespace olc
 
         std::string get_time() 
         {
-            time_t now = time(0);
-            struct tm tstruct;
-            char buf[80];
-            localtime_s(&tstruct, &now);
-            strftime(buf, sizeof(buf), "%H:%M", &tstruct);
-            return buf;
+            std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            struct std::tm ptm;
+#ifdef _MSC_VER
+            localtime_s(&ptm, &tt);
+#else
+            localtime_r(&tt, &ptm);
+#endif
+            std::stringstream ss;
+            ss << std::put_time(&ptm, "%R");
+            return ss.str();
         }
     public:
         FUI_Console(const std::string& id, FUI_Window* parent, const std::string& title, olc::vi2d position, olc::vi2d size, int input_thickness);
@@ -1170,6 +1178,14 @@ namespace olc
             command_handler = handler;
         else
             std::cout << "Trying to add_command_handler to wrong UI_TYPE\n";
+    }
+
+    void FUI_Element::add_command_entry(std::string& entry)
+    {
+        if (ui_type == FUI_Type::CONSOLE)
+            command_entry = entry;
+        else
+            std::cout << "Trying to add_command_entry to wrong UI_TYPE\n";
     }
 
     void FUI_Element::clear_console()
@@ -2858,6 +2874,7 @@ namespace olc
         if (should_clear_console)
         {
             executed_commands.clear();
+            scroll_index = 0;
             should_clear_console = false;
         }
 
@@ -2880,15 +2897,23 @@ namespace olc
 
     void FUI_Console::input(olc::PixelGameEngine* pge)
     {
-        if (inputfield.get_focused_status())
+        if (inputfield.get_focused_status() || !command_entry.empty())
         {
-            if (pge->GetKey(olc::ENTER).bPressed)
+            if (pge->GetKey(olc::ENTER).bPressed || !command_entry.empty())
             {
                 command = inputfield.get_inputfield_value();
+                if (!command_entry.empty())
+                    command = command_entry;
                 if (!command.empty())
                 {
-                    command_handler(command, &executed_command);
-                    std::string temp1 = get_time() + " - " + executed_command;
+                    std::string temp1;
+                    if (command_entry.empty())
+                    {
+                        command_handler(command, &executed_command);
+                        temp1 = get_time() + " - " + executed_command;
+                    }
+                    else
+                        temp1 = get_time() + " - " + command;
                     auto text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(temp1)) * text_scale;
                     auto size_to_remove = 0.f;
                     while (text_size.x > size.x)
@@ -2909,19 +2934,17 @@ namespace olc
 
                     auto title_size = pge->GetTextSizeProp(text) * text_scale;
                     auto current_visible = executed_commands.size();
-                    if (title_size.y + (text_size.y * commands_shown) >= scroll_threshold)
-                        can_scroll = true;
-                    else
-                        can_scroll = false;
 
-                    if (can_scroll)
+                    if (title_size.y + (text_size.y * commands_shown) >= scroll_threshold)
                         scroll_index++;
 
-                    if (title_size.y + (text_size.y * executed_commands.size()) >= scroll_threshold)
-                        can_scroll = true;
-                    else
-                        can_scroll = false;
+                    //unsure why I added this line here, if I figure it out back in it goes :)
+                    //if (title_size.y + (text_size.y * executed_commands.size()) >= scroll_threshold)
+                    //   scroll_index++;
 
+                    
+                    if (!command_entry.empty())
+                        command_entry.clear();
                     last_executed_command = command;
                 }
             }
@@ -2929,18 +2952,15 @@ namespace olc
             if (executed_commands.size() > 0 && pge->GetKey(olc::UP).bPressed)
                 inputfield.set_inputfield_value(last_executed_command);
 
-            if (can_scroll)
+            if (pge->GetMouseWheel() > 0)
             {
-                if (pge->GetMouseWheel() > 0)
-                {
-                    if (scroll_index > 0)
-                        scroll_index--;
-                }
-                else if (pge->GetMouseWheel() < 0)
-                {
-                    if (scroll_index < executed_commands.size() - 1)
-                        scroll_index++;
-                }
+                if (scroll_index > 0)
+                    scroll_index--;
+            }
+            else if (pge->GetMouseWheel() < 0)
+            {
+                if (scroll_index < executed_commands.size() - 1)
+                    scroll_index++;
             }
         }
         inputfield.input(pge);
