@@ -553,7 +553,7 @@ namespace olc
         float scroll_threshold = 0.f;
         bool can_scroll = false;
         int scroll_index = 0;
-        int commands_shown = 0;
+        int commands_shown = 1;
 
         std::string get_time() 
         {
@@ -2863,11 +2863,11 @@ namespace olc
         auto title_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(text)) * text_scale;
         auto text_pos = olc::vf2d{ absolute_position.x + (size.x / 2) - (title_size.x / 2) , absolute_position.y + 1 };
         pge->DrawStringPropDecal(text_pos, text, text_color, text_scale);
-        pge->FillRectDecal({ absolute_position.x, absolute_position.y + title_size.y + 1}, { size.x, 1 }, color_scheme.console_outline);
+        pge->FillRectDecal({ absolute_position.x, absolute_position.y + title_size.y}, { size.x, 1 }, color_scheme.console_outline);
 
         if (run_once)
         {
-            scroll_threshold = size.y - input_thickness - title_size.y - 2;
+            scroll_threshold = size.y - input_thickness - title_size.y;
             run_once = false;
         }
 
@@ -2880,7 +2880,7 @@ namespace olc
 
         // console text
         int j = 0;
-        commands_shown = 0;
+        commands_shown = 1;
         for (int i = scroll_index; i < executed_commands.size(); i++)
         {
             auto text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(executed_commands[i])) * text_scale;
@@ -2933,10 +2933,12 @@ namespace olc
                     inputfield.clear_inputfield_value();
 
                     auto title_size = pge->GetTextSizeProp(text) * text_scale;
-                    auto current_visible = executed_commands.size();
 
-                    if (title_size.y + (text_size.y * commands_shown) >= scroll_threshold)
+                    if (scroll_threshold > 0 && text_size.y * commands_shown >= scroll_threshold)
                         scroll_index++;
+
+                    if (scroll_index > 0 && scroll_index < (executed_commands.size() - commands_shown) + 1)
+                        scroll_index = (executed_commands.size() - commands_shown) + 1;
 
                     //unsure why I added this line here, if I figure it out back in it goes :)
                     //if (title_size.y + (text_size.y * executed_commands.size()) >= scroll_threshold)
@@ -2951,7 +2953,13 @@ namespace olc
 
             if (executed_commands.size() > 0 && pge->GetKey(olc::UP).bPressed)
                 inputfield.set_inputfield_value(last_executed_command);
+        }
 
+        if (pge->GetMousePos().x >= absolute_position.x &&
+            pge->GetMousePos().x <= absolute_position.x + size.x &&
+            pge->GetMousePos().y >= absolute_position.y &&
+            pge->GetMousePos().y <= absolute_position.y + size.y)
+        {
             if (pge->GetMouseWheel() > 0)
             {
                 if (scroll_index > 0)
@@ -2963,6 +2971,7 @@ namespace olc
                     scroll_index++;
             }
         }
+
         inputfield.input(pge);
     }
 
