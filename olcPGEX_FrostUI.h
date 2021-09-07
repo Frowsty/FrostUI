@@ -514,12 +514,17 @@ namespace olc
         std::string text_noshift = "abcdefghijklmnopqrstuvwxyz0123456789[];,.'/\\`=- ";
         std::string text_shift = "ABCDEFGHIJKLMNOPQRSTUVWXYZ)!@#$%^&*({}:<>\"?|~+_ ";
         bool select_all = false;
+        int selected_chars = 0;
 
         bool is_textkey_pressed(olc::PixelGameEngine* pge, const TextKey& key);
 
         int get_char_id(olc::PixelGameEngine* pge);
 
         std::string get_char_from_id(olc::PixelGameEngine* pge);
+
+        std::string get_clipboard_data();
+
+        void copy_to_clipboard(std::string data);
 
         std::string old_inputfield_text = inputfield_text;
         std::string text_out_of_view;
@@ -2663,6 +2668,46 @@ namespace olc
         return std::string(1, text_noshift[index]);
     }
 
+
+    std::string FUI_Inputfield::get_clipboard_data()
+    {
+#ifdef _MSC_VER
+        if (OpenClipboard(NULL))
+        {
+            auto data = GetClipboardData(CF_TEXT);
+            std::string text;
+            text = (char*)data;
+            CloseClipboard();
+
+            return text;
+        }
+        else
+            return "";
+#endif
+        return "";
+    }
+
+    void FUI_Inputfield::copy_to_clipboard(std::string data)
+    {
+#ifdef _MSC_VER
+        if (data.size() > 0 && OpenClipboard(NULL))
+        {
+            EmptyClipboard();
+
+            HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, data.size() + 1);
+            if (!hg) {
+                CloseClipboard();
+                return;
+            }
+            memcpy(GlobalLock(hg), data.c_str(), data.size() + 1);
+            GlobalUnlock(hg);
+            SetClipboardData(CF_TEXT, hg);
+            CloseClipboard();
+            GlobalFree(hg);
+        }
+#endif
+    }
+
     void FUI_Inputfield::draw(olc::PixelGameEngine* pge)
     {
         absolute_position = get_absolute_position();
@@ -2679,8 +2724,6 @@ namespace olc
         pge->FillRectDecal(absolute_position, size, color_scheme.inputfield_outline);
         // background
         pge->FillRectDecal(absolute_position + olc::vf2d{ 1.0f, 1.0f }, size - olc::vf2d{ 2.0f, 2.0f }, color_scheme.inputfield_background);
-        if (select_all)
-            pge->FillRectDecal(absolute_position, olc::vf2d(display_text_size.x, size.y), color_scheme.inputfield_select_all_background);
         
         // render the text ( + 3 in text_position is used as an offset to not render the first letter inside of the outline)
         text_position = olc::vf2d{ absolute_position.x + 3, absolute_position.y + (size.y / 2) - (display_text_size.y / 2) };
@@ -2719,6 +2762,21 @@ namespace olc
 
         pge->DrawStringPropDecal(text_position, displayed_text, text_color, input_scale);
 
+        if (select_all)
+            pge->FillRectDecal(text_position, olc::vf2d(display_text_size.x, display_text_size.y), color_scheme.inputfield_select_all_background);
+
+        if (selected_chars > 0)
+        {
+            auto position = text_position;
+            for (int i = 1; i <= selected_chars; i++)
+            {
+                auto char_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(displayed_text.substr(displayed_text.size() - i, 1)))* input_scale;
+                position.x -= char_size.x;
+                pge->FillRectDecal(olc::vf2d((position.x + display_text_size.x), position.y),
+                    olc::vf2d(char_size.x, display_text_size.y), color_scheme.inputfield_select_all_background);
+            }
+        }
+
         if (cursor_position.x + cursor_size.x > absolute_position.x + size.x)
             cursor_position.x -= (cursor_position.x + cursor_size.x) - (absolute_position.x + size.x);
 
@@ -2751,8 +2809,12 @@ namespace olc
 
         if (is_focused)
         {
-            if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::A).bPressed)
+            if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::A).bPressed && !displayed_text.empty())
+            {
+                if (selected_chars > 0)
+                    selected_chars = 0;
                 select_all = true;
+            }
 
             if (pge->GetKey(olc::ESCAPE).bPressed)
                 is_focused = false;
@@ -2761,6 +2823,62 @@ namespace olc
             {
                 if (input_enter_callback)
                     input_enter_callback();
+            }
+
+            if (pge->GetKey(olc::SHIFT).bHeld && pge->GetKey(olc::LEFT).bPressed && !displayed_text.empty())
+            {
+                if (selected_chars <= displayed_text.size() - 1)
+                {
+                    if (select_all)
+                        select_all = false;
+                    selected_chars++;
+                }
+            }
+
+            if (pge->GetKey(olc::SHIFT).bHeld && pge->GetKey(olc::RIGHT).bPressed && selected_chars > 0)
+                selected_chars--;
+
+            if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::V).bPressed)
+            {
+                if (select_all)
+                {
+                    inputfield_text.clear();
+                    displayed_text.clear();
+                    text_out_of_view.clear();
+                    old_inputfield_text.clear();
+                    select_all = false;
+                }
+                if (selected_chars)
+                {
+                    inputfield_text.erase(inputfield_text.size() - selected_chars, inputfield_text.size());
+                    displayed_text.erase(displayed_text.size() - selected_chars, displayed_text.size());
+                    selected_chars = 0;
+                }
+                auto data = get_clipboard_data();
+                if (data.size() > 0)
+                {
+                    inputfield_text.append(data);
+                    displayed_text.append(data);
+                }
+            }
+
+            if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::C).bPressed)
+            {
+                if (select_all)
+                    copy_to_clipboard(inputfield_text);
+            }
+
+            if (selected_chars > 0 && get_char_from_id(pge).size() > 0 && !pge->GetKey(olc::CTRL).bHeld)
+            {
+                inputfield_text.erase(inputfield_text.size() - selected_chars, inputfield_text.size());
+                displayed_text.erase(displayed_text.size() - selected_chars, displayed_text.size());
+                old_inputfield_text.erase(old_inputfield_text.size() - selected_chars, old_inputfield_text.size());
+                if (text_out_of_view.size() > 0)
+                {
+                    displayed_text.insert(0, &text_out_of_view.back());
+                    text_out_of_view.pop_back();
+                }
+                selected_chars = 0;
             }
 
             // Clear text
@@ -2773,16 +2891,31 @@ namespace olc
                 old_inputfield_text.clear();
                 select_all = false;
             }
-            // Remove last character if backspace is pressed
+            // Remove last character if backspace is pressed / remove selected_char amount if text is selected
             if (pge->GetKey(olc::BACK).bPressed && !select_all && inputfield_text.size() > 0)
             {
-                inputfield_text.pop_back();
-                displayed_text.pop_back();
-                old_inputfield_text.pop_back();
-                if (text_out_of_view.size() > 0)
+                if (selected_chars > 0)
                 {
-                    displayed_text.insert(0, &text_out_of_view.back());
-                    text_out_of_view.pop_back();
+                    inputfield_text.erase(inputfield_text.size() - selected_chars, inputfield_text.size());
+                    displayed_text.erase(displayed_text.size() - selected_chars, displayed_text.size());
+                    old_inputfield_text.erase(old_inputfield_text.size() - selected_chars, old_inputfield_text.size());
+                    if (text_out_of_view.size() > 0)
+                    {
+                        displayed_text.insert(0, &text_out_of_view.back());
+                        text_out_of_view.pop_back();
+                    }
+                    selected_chars = 0;
+                }
+                else
+                {
+                    inputfield_text.pop_back();
+                    displayed_text.pop_back();
+                    old_inputfield_text.pop_back();
+                    if (text_out_of_view.size() > 0)
+                    {
+                        displayed_text.insert(0, &text_out_of_view.back());
+                        text_out_of_view.pop_back();
+                    }
                 }
             }
 
@@ -2899,6 +3032,14 @@ namespace olc
     {
         if (inputfield.get_focused_status() || !command_entry.empty())
         {
+            // instantly jump to the top or bottom
+            if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::UP).bPressed)
+            {
+                scroll_index = 0;
+            }
+            else if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::DOWN).bPressed)
+                scroll_index = (executed_commands.size() - commands_shown) + 1;
+
             if (pge->GetKey(olc::ENTER).bPressed || !command_entry.empty())
             {
                 command = inputfield.get_inputfield_value();
@@ -2943,15 +3084,15 @@ namespace olc
                     //unsure why I added this line here, if I figure it out back in it goes :)
                     //if (title_size.y + (text_size.y * executed_commands.size()) >= scroll_threshold)
                     //   scroll_index++;
-
-                    
+ 
                     if (!command_entry.empty())
                         command_entry.clear();
-                    last_executed_command = command;
+                    else
+                        last_executed_command = command;
                 }
             }
 
-            if (executed_commands.size() > 0 && pge->GetKey(olc::UP).bPressed)
+            if (executed_commands.size() > 0 && pge->GetKey(olc::UP).bPressed && !(pge->GetKey(olc::CTRL).bHeld || pge->GetKey(olc::SHIFT).bHeld))
                 inputfield.set_inputfield_value(last_executed_command);
         }
 
