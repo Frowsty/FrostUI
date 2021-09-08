@@ -948,7 +948,7 @@ namespace olc
     void FUI_Element::add_item(const std::string& item, olc::vf2d scale = { 1.0f, 1.0f })
     {
         if (ui_type == FUI_Type::DROPDOWN || ui_type == FUI_Type::COMBOLIST)
-            elements.push_back(std::make_pair(elements.size(), std::make_pair(DropdownState::NONE, std::make_pair(scale, item))));
+            elements.emplace_back(std::make_pair(elements.size(), std::make_pair(DropdownState::NONE, std::make_pair(scale, item))));
         else
             std::cout << "Trying to add_item to wrong UI_TYPE\n";
     }
@@ -1014,7 +1014,7 @@ namespace olc
                         if (element.first == item && !found)
                         {
                             element.second.first = DropdownState::ACTIVE;
-                            selected_elements.push_back(std::make_pair(element.first, element.second.second));
+                            selected_elements.emplace_back(std::make_pair(element.first, element.second.second));
                         }
                     }
                 }
@@ -1041,7 +1041,7 @@ namespace olc
         {
             return_selected_items.clear();
             for (auto& item : selected_elements)
-                return_selected_items.push_back(item.first);
+                return_selected_items.emplace_back(item.first);
 
             return return_selected_items;
         }
@@ -2073,7 +2073,7 @@ namespace olc
                             if (!did_find_element)
                             {
                                 elements[j].second.first = DropdownState::ACTIVE;
-                                selected_elements.push_back(std::make_pair(elements[j].first, elements[j].second.second));
+                                selected_elements.emplace_back(std::make_pair(elements[j].first, elements[j].second.second));
                             }
                         }
                         else if (elements[j].second.first != DropdownState::ACTIVE)
@@ -2138,7 +2138,7 @@ namespace olc
                             if (!did_find_element)
                             {
                                 element.second.first = DropdownState::ACTIVE;
-                                selected_elements.push_back(std::make_pair(element.first, element.second.second));
+                                selected_elements.emplace_back(std::make_pair(element.first, element.second.second));
                             }
                         }
                         else if (element.second.first != DropdownState::ACTIVE)
@@ -3195,7 +3195,7 @@ namespace olc
             }
             if (window->is_focused())
             {
-                windows.push_back(window);
+                windows.emplace_back(window);
                 windows.erase(windows.begin() + i);
             }
             i++;
@@ -3209,7 +3209,7 @@ namespace olc
         {
             if (element->get_focused_status())
             {
-                elements.push_back(element);
+                elements.emplace_back(element);
                 elements.erase(elements.begin() + i);
             }
             i++;
@@ -3263,7 +3263,7 @@ namespace olc
         }
         if (!is_duplicate)
         {
-            windows.push_back(new FUI_Window{ pge, identifier, position, size, title });
+            windows.emplace_back(new FUI_Window{ pge, identifier, position, size, title });
             temp_window = windows.back();
         }
         else
@@ -3284,7 +3284,7 @@ namespace olc
                 is_duplicate = true;
         }
         if (!is_duplicate)
-            groups.push_back(std::make_pair(window_id, group_id));
+            groups.emplace_back(std::make_pair(window_id, group_id));
         else
             std::cout << "Cannot add duplicates of same group (function affected: add_group, affected group_id: " + group_id + ")\n";
     }
@@ -3362,9 +3362,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, text, position));
+                            elements.emplace_back(std::make_shared<FUI_Label>(identifier, window, text, position));
                         else
-                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group.second, text, position));
+                            elements.emplace_back(std::make_shared<FUI_Label>(identifier, window, active_group.second, text, position));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_label, label_id affected: " + identifier + ")\n";
                 }
@@ -3386,16 +3386,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, active_group.second, text, position));
+                            elements.emplace_back(std::make_shared<FUI_Label>(identifier, window, active_group.second, text, position));
                         else
-                            elements.push_back(std::make_shared<FUI_Label>(identifier, window, text, position));
+                            elements.emplace_back(std::make_shared<FUI_Label>(identifier, window, text, position));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Label>(identifier, active_group.second, text, position));
+                    elements.emplace_back(std::make_shared<FUI_Label>(identifier, active_group.second, text, position));
                 else
-                    elements.push_back(std::make_shared<FUI_Label>(identifier, text, position));
+                    elements.emplace_back(std::make_shared<FUI_Label>(identifier, text, position));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
@@ -3411,9 +3411,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
                         else
-                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
                 }
@@ -3435,16 +3435,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
                         else
-                            elements.push_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_front(std::make_shared<FUI_Checkbox>(identifier, active_group.second, text, position, size, cb_state));
+                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, active_group.second, text, position, size, cb_state));
                 else
-                    elements.push_front(std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state));
+                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
@@ -3460,9 +3460,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
                 }
@@ -3484,16 +3484,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group.second, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Dropdown>(identifier, active_group.second, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, active_group.second, text, position, size));
                 else
-                    elements.push_back(std::make_shared<FUI_Dropdown>(identifier, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, text, position, size));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
@@ -3509,9 +3509,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
                 }
@@ -3533,16 +3533,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, window, active_group.second, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Combolist>(identifier, active_group.second, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, active_group.second, text, position, size));
                 else
-                    elements.push_back(std::make_shared<FUI_Combolist>(identifier, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, text, position, size));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
@@ -3558,9 +3558,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
+                            groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
                         else
-                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group.second, text, position, size));
+                            groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
                 }
@@ -3582,16 +3582,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group.second, text, position, size));
+                            groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group.second, text, position, size));
                         else
-                            groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
+                            groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, active_group.second, text, position, size));
+                    groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, active_group.second, text, position, size));
                 else
-                    groupboxes.push_back(std::make_shared<FUI_Groupbox>(identifier, text, position, size));
+                    groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, text, position, size));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
@@ -3607,9 +3607,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
                 }
@@ -3631,16 +3631,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                 else
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
@@ -3656,9 +3656,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
                 }
@@ -3680,16 +3680,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
                         else
-                            elements.push_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
                 else
-                    elements.push_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::INT));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
@@ -3705,9 +3705,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
+                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                         else
-                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
+                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
                 }
@@ -3729,16 +3729,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
+                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
                         else
-                            elements.push_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
+                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_front(std::make_shared<FUI_Button>(identifier, active_group.second, text, position, size, callback));
+                    elements.emplace_front(std::make_shared<FUI_Button>(identifier, active_group.second, text, position, size, callback));
                 else
-                    elements.push_front(std::make_shared<FUI_Button>(identifier, text, position, size, callback));
+                    elements.emplace_front(std::make_shared<FUI_Button>(identifier, text, position, size, callback));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
@@ -3754,9 +3754,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group.second, text, position, size));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
                 }
@@ -3778,16 +3778,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group.second, text, position, size));
                         else
-                            elements.push_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Inputfield>(identifier, active_group.second, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, active_group.second, text, position, size));
                 else
-                    elements.push_back(std::make_shared<FUI_Inputfield>(identifier, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, text, position, size));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
@@ -3803,9 +3803,9 @@ namespace olc
                 {
                     if (window->get_id() == parent_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Console>(identifier, window, text, position, size, inputfield_thickness));
+                            elements.emplace_back(std::make_shared<FUI_Console>(identifier, window, text, position, size, inputfield_thickness));
                         else
-                            elements.push_back(std::make_shared<FUI_Console>(identifier, window, active_group.second, text, position, size, inputfield_thickness));
+                            elements.emplace_back(std::make_shared<FUI_Console>(identifier, window, active_group.second, text, position, size, inputfield_thickness));
                     else
                         std::cout << "Could not find parent window ID (function affected: add_console, console_id affected: " + identifier + ")\n";
                 }
@@ -3827,16 +3827,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.push_back(std::make_shared<FUI_Console>(identifier, window, active_group.second, text, position, size, inputfield_thickness));
+                            elements.emplace_back(std::make_shared<FUI_Console>(identifier, window, active_group.second, text, position, size, inputfield_thickness));
                         else
-                            elements.push_back(std::make_shared<FUI_Console>(identifier, window, text, position, size, inputfield_thickness));
+                            elements.emplace_back(std::make_shared<FUI_Console>(identifier, window, text, position, size, inputfield_thickness));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.push_back(std::make_shared<FUI_Console>(identifier, active_group.second, text, position, size, inputfield_thickness));
+                    elements.emplace_back(std::make_shared<FUI_Console>(identifier, active_group.second, text, position, size, inputfield_thickness));
                 else
-                    elements.push_back(std::make_shared<FUI_Console>(identifier, text, position, size, inputfield_thickness));
+                    elements.emplace_back(std::make_shared<FUI_Console>(identifier, text, position, size, inputfield_thickness));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
