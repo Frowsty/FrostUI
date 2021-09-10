@@ -2706,7 +2706,6 @@ namespace olc
                 CloseClipboard();
                 return;
             }
-            std::cout << (data.size());
             memcpy(GlobalLock(hg), data.c_str(), data.size() + 1);
             GlobalUnlock(hg);
             SetClipboardData(CF_TEXT, hg);
