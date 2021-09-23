@@ -531,6 +531,9 @@ namespace olc
         std::string displayed_text;
 
         uint64_t last_cursor_tick = 0;
+        uint64_t hold_backspace_tick = 0;
+        uint64_t last_backspace_tick = 0;
+        bool initial_backspace = true;
 
     public:
         FUI_Inputfield(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
@@ -2800,6 +2803,8 @@ namespace olc
 
     void FUI_Inputfield::input(olc::PixelGameEngine* pge)
     {
+        auto timer = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
         if (pge->GetMousePos().x >= absolute_position.x &&
             pge->GetMousePos().x <= absolute_position.x + size.x &&
             pge->GetMousePos().y >= absolute_position.y &&
@@ -2885,9 +2890,15 @@ namespace olc
                 }
             }
 
+            // related to holding backspace for deletion of characters
+            if (pge->GetKey(olc::BACK).bPressed && initial_backspace)
+                hold_backspace_tick = timer;
+
             // Remove last character if backspace is pressed / remove selected_char amount if text is selected
-            if (pge->GetKey(olc::BACK).bPressed && !select_all && inputfield_text.size() > 0)
+            if (pge->GetKey(olc::BACK).bHeld && !select_all && inputfield_text.size() > 0 &&
+               (initial_backspace || timer - hold_backspace_tick > 500) && timer - last_backspace_tick > 50)
             {
+                initial_backspace = false;
                 if (selected_chars > 0)
                 {
                     inputfield_text.erase(inputfield_text.size() - selected_chars, inputfield_text.size());
@@ -2911,7 +2922,11 @@ namespace olc
                         text_out_of_view.pop_back();
                     }
                 }
+                last_backspace_tick = timer;
             }
+
+            if (!pge->GetKey(olc::BACK).bHeld)
+                initial_backspace = true;
 
             // Clear text
             if ((select_all && get_char_from_id(pge).size() > 0 && !pge->GetKey(olc::CTRL).bHeld) ||
@@ -3040,9 +3055,7 @@ namespace olc
         {
             // instantly jump to the top or bottom
             if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::UP).bPressed)
-            {
                 scroll_index = 0;
-            }
             else if (pge->GetKey(olc::CTRL).bHeld && pge->GetKey(olc::DOWN).bPressed)
                 scroll_index = (executed_commands.size() - commands_shown) + 1;
 
@@ -3083,9 +3096,12 @@ namespace olc
 
                     if (scroll_threshold > 0 && text_size.y * commands_shown >= scroll_threshold)
                         scroll_index++;
+                    
+                    //std::cout << "index: " << scroll_index << std::endl;
 
-                    if (scroll_index > 0 && scroll_index < (executed_commands.size() - commands_shown) + 1)
-                        scroll_index = (executed_commands.size() - commands_shown) + 1;
+                    
+                    if (scroll_index > 0 && scroll_index < (executed_commands.size() - commands_shown) + 1 && text_size.y * commands_shown >= scroll_threshold)
+                        scroll_index = (executed_commands.size() - commands_shown) + 1;                    
 
                     //unsure why I added this line here, if I figure it out back in it goes :)
                     //if (title_size.y + (text_size.y * executed_commands.size()) >= scroll_threshold)
