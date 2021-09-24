@@ -1170,6 +1170,10 @@ namespace olc
                 if (texture_positions.size() < 3)
                     std::cout << "There's not enough sprites to cover all button states\n";
             break;
+        case FUI_Type::CHECKBOX:
+            if (texture_positions.size() < 4)
+                std::cout << "There's not enough sprites to cover all checkbox state\n";
+            break;
         }
     }
 
@@ -1335,7 +1339,6 @@ namespace olc
                 else
                     pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
                 break;
-                break;
             }
         }
         else
@@ -1484,28 +1487,60 @@ namespace olc
         // Draw the text
         auto text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(text))* text_scale;
         auto text_position = olc::vf2d{ absolute_position.x - text_size.x, absolute_position.y + (size.y / 2) - (text_size.y / 2) };
-        pge->FillRectDecal(absolute_position, size, color_scheme.checkbox_normal);
 
-        pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
-
+        if (!has_textures)
+        {
+            pge->FillRectDecal(absolute_position, size, color_scheme.checkbox_normal);
+            pge->DrawStringPropDecal(text_position, text, text_color, text_scale);
+        }
         olc::vf2d checkbox_filling = olc::vf2d{ 1.0f, 1.0f };
         // Draw the body of the checkbox
-        switch (state)
+        if (has_textures)
         {
-        case State::NONE:
-            break;
-        case State::HOVER:
-            pge->FillRectDecal(absolute_position + checkbox_filling,
-                { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_hover);
-            break;
-        case State::CLICK:
-            pge->FillRectDecal(absolute_position + checkbox_filling,
-                { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_click);
-            break;
-        case State::ACTIVE:
-            pge->FillRectDecal(absolute_position + checkbox_filling,
-                { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_active);
-            break;
+            switch (state)
+            {
+            case State::NONE:
+                pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
+            case State::HOVER:
+                if (texture_positions.size() > 1)
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::HOVER)], texture_size, texture_scale);
+                else
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
+            case State::CLICK:
+                if (texture_positions.size() > 2)
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::CLICK)], texture_size, texture_scale);
+                else
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
+            case State::ACTIVE:
+                if (texture_positions.size() > 3)
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::CLICK)], texture_size, texture_scale);
+                else
+                    pge->DrawPartialDecal(absolute_position, texture, texture_positions[static_cast<int>(State::NONE)], texture_size, texture_scale);
+                break;
+            }
+        }
+        else
+        {
+            switch (state)
+            {
+            case State::NONE:
+                break;
+            case State::HOVER:
+                pge->FillRectDecal(absolute_position + checkbox_filling,
+                    { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_hover);
+                break;
+            case State::CLICK:
+                pge->FillRectDecal(absolute_position + checkbox_filling,
+                    { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_click);
+                break;
+            case State::ACTIVE:
+                pge->FillRectDecal(absolute_position + checkbox_filling,
+                    { static_cast<float>(size.x) - 2.0f, static_cast<float>(size.y) - 2.0f }, color_scheme.checkbox_active);
+                break;
+            }
         }
     }
 
