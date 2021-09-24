@@ -3398,8 +3398,8 @@ namespace olc
                 }
                 windows.erase(windows.begin() + i);
                 break;
-                i++;
             }
+            i++;
         }
     }
 
