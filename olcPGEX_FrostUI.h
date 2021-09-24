@@ -679,6 +679,8 @@ namespace olc
 
         void remove_element(const std::string& identifier);
 
+        void remove_window(const std::string& identifier);
+
         int get_element_amount();
 
         void run();
@@ -689,7 +691,6 @@ namespace olc
 #               IMPLEMENTATIONS                    #
 ####################################################
 */
-#define OLC_PGEX_FUI
 #ifdef OLC_PGEX_FUI
 #undef OLC_PGEX_FUI
 namespace olc
@@ -3370,6 +3371,35 @@ namespace olc
                 break;
             }
             i++;
+        }
+    }
+
+    void FrostUI::remove_window(const std::string& id)
+    {
+        int i = 0;
+        for (auto& window : windows)
+        {
+            if (window->get_id() == id)
+            {
+                int j = 0;
+                for (auto& element : elements)
+                {
+                    if (!element->get_parent())
+                    {
+                        j++;
+                        continue;
+                    }
+                    if (element->get_parent()->get_id() == id)
+                    {
+                        elements.erase(elements.begin() + j);
+                        break;
+                    }
+                    j++;
+                }
+                windows.erase(windows.begin() + i);
+                break;
+                i++;
+            }
         }
     }
 
