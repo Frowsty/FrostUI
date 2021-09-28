@@ -1144,7 +1144,7 @@ namespace olc
 
     olc::vf2d FUI_Element::get_text_size(olc::PixelGameEngine* pge)
     {
-        return static_cast<olc::vf2d>(pge->GetTextSizeProp(text))* text_scale;
+        return static_cast<olc::vf2d>(pge->GetTextSizeProp(text)) * text_scale;
     }
 
     void FUI_Element::add_texture(olc::Decal* txtr, std::vector<olc::vi2d> texture_pos, olc::vi2d s)
@@ -3464,16 +3464,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_back(std::make_shared<FUI_Label>(identifier, window, text, position));
                         else
                             elements.emplace_back(std::make_shared<FUI_Label>(identifier, window, active_group.second, text, position));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_label, label_id affected: " + identifier + ")\n";
+
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_label, label_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_label, label_id affected: " + identifier + ")\n";
@@ -3513,16 +3519,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
                         else
                             elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
+
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
@@ -3562,16 +3574,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, window, text, position, size));
                         else
                             elements.emplace_back(std::make_shared<FUI_Dropdown>(identifier, window, active_group.second, text, position, size));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
+
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_dropdown, dropdown_id affected: " + identifier + ")\n";
@@ -3611,16 +3629,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, window, text, position, size));
                         else
                             elements.emplace_back(std::make_shared<FUI_Combolist>(identifier, window, active_group.second, text, position, size));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
+
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_combolist, combolist_id affected: " + identifier + ")\n";
@@ -3660,16 +3684,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, window, text, position, size));
                         else
                             groupboxes.emplace_back(std::make_shared<FUI_Groupbox>(identifier, window, active_group.second, text, position, size));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
+
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
@@ -3709,16 +3739,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
                         else
                             elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+                    
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_slider, slider_id affected: " + identifier + ")\n";
@@ -3758,16 +3794,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
                         else
                             elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
+                    
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_slider, slider_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_slider, slider_id affected: " + identifier + ")\n";
@@ -3807,16 +3849,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                         else
                             elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
+                    
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_button, button_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_button, button_id affected: " + identifier + ")\n";
@@ -3856,16 +3904,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, window, text, position, size));
                         else
                             elements.emplace_back(std::make_shared<FUI_Inputfield>(identifier, window, active_group.second, text, position, size));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
+
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_inputfield, inputfield_id affected: " + identifier + ")\n";
@@ -3905,16 +3959,22 @@ namespace olc
         {
             if (windows.size() > 0)
             {
+                bool did_add = false;
                 for (auto& window : windows)
                 {
                     if (window->get_id() == parent_id)
+                    {
+                        did_add = true;
                         if (!active_group.second.empty())
                             elements.emplace_back(std::make_shared<FUI_Console>(identifier, window, text, position, size, inputfield_thickness));
                         else
                             elements.emplace_back(std::make_shared<FUI_Console>(identifier, window, active_group.second, text, position, size, inputfield_thickness));
-                    else
-                        std::cout << "Could not find parent window ID (function affected: add_console, console_id affected: " + identifier + ")\n";
+                        
+                        break;
+                    }
                 }
+                if (!did_add)
+                    std::cout << "Could not find parent window ID (function affected: add_console, console_id affected: " + identifier + ")\n";
             }
             else
                 std::cout << "There's no windows to be used as parent (function affected: add_console, console_id affected: " + identifier + ")\n";
