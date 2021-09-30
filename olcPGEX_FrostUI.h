@@ -321,7 +321,8 @@ namespace olc
 
         void set_slider_value(int value);
 
-        const float get_slider_value() const;
+        template<typename T>
+        const T get_slider_value() const;
 
         const std::string get_inputfield_value() const;
 
@@ -1093,22 +1094,23 @@ namespace olc
             std::cout << "Trying to set_slider_value on wrong UI_TYPE\n";
     }
 
-    const float FUI_Element::get_slider_value() const
+    template <typename T>
+    const T FUI_Element::get_slider_value() const
     {
         if (ui_type == FUI_Type::SLIDER)
         {
             switch (slider_type)
             {
             case type::FLOAT:
-                return slider_value_float;
+                return T(slider_value_float);
             case type::INT:
-                return slider_value_int;
+                return T(slider_value_int);
             }
         }
         else
             std::cout << "Trying to get_slider_value on wrong UI_TYPE\n";
 
-        return 0.0f;
+        return T(0);
     }
 
     const std::string FUI_Element::get_inputfield_value() const
