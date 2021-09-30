@@ -3043,7 +3043,7 @@ namespace olc
 
     void FUI_Console::draw(olc::PixelGameEngine* pge)
     {
-        absolute_position = get_absolute_position();
+        absolute_position = get_absolute_position() + olc::vf2d{ 0, 1 };
 
         inputfield.inputfield_scale(text_scale);
         inputfield.set_position({ absolute_position.x, absolute_position.y + size.y - 1 - input_thickness });
