@@ -9,6 +9,12 @@ void GUI::create()
     texture_position.push_back({ 1, 37 });
     texture_position.push_back({ 1, 1 });
 
+    frost_ui.create_window("window", "Console Window", { 100, 100 }, { 300, 200 });
+    frost_ui.add_console("window", "console", "Console", { 0, 76 }, { 290, 100 }, 20);
+    // command handler is mandatory to have for console window, if you don't want to execute any actions simply do '*return_msg = command'
+    // for it to print out any text your type into the input field of the console
+    frost_ui.find_element("console")->add_command_handler([](std::string& command, std::string* return_msg) { *return_msg = command; });
+
     frost_ui.add_label("id2", "lbl1", "HELLO", { 10, 10 });
     
     frost_ui.add_groupbox("groupbox1", "", { 0, 0 }, { 200, 250 });

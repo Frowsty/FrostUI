@@ -260,7 +260,7 @@ namespace olc
 
         std::string identifier;
 
-        std::function<void(std::string&, std::string*)> command_handler;
+        std::function<void(std::string& command, std::string* return_msg)> command_handler;
         bool should_clear_console = false;
         std::string command_entry;
     public:
@@ -3046,7 +3046,7 @@ namespace olc
         absolute_position = get_absolute_position();
 
         inputfield.inputfield_scale(text_scale);
-        inputfield.set_position({ absolute_position.x, absolute_position.y + size.y - input_thickness });
+        inputfield.set_position({ absolute_position.x, absolute_position.y + size.y - 1 - input_thickness });
 
         // outline
         pge->FillRectDecal(absolute_position, { size.x , size.y - input_thickness }, color_scheme.console_outline);
@@ -3061,7 +3061,7 @@ namespace olc
 
         if (run_once)
         {
-            scroll_threshold = size.y - input_thickness - title_size.y;
+            scroll_threshold = size.y - 1 - input_thickness - title_size.y;
             run_once = false;
         }
 
