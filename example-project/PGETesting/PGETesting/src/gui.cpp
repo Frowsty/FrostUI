@@ -4,12 +4,13 @@
 
 void GUI::create()
 {
-    /*
     buttons.Load("textures/buttons.png");
     texture_position.push_back({ 1, 73 });
     texture_position.push_back({ 1, 37 });
     texture_position.push_back({ 1, 1 });
-    */
+
+    frost_ui.add_label("id2", "lbl1", "HELLO", { 10, 10 });
+    
     frost_ui.add_groupbox("groupbox1", "", { 0, 0 }, { 200, 250 });
 
     frost_ui.add_dropdown("resolution", "Resolution: ", { 80, 10 }, { 100, 20 });
@@ -38,6 +39,7 @@ void GUI::create()
     frost_ui.add_checkbox("fullscreen", "Fullscreen: ", { 80, 70 }, { 20, 20 }, &fullscreen);
 
     frost_ui.add_inputfield("custom_title", "Custom title: ", { 80, 100 }, { 100, 20 });
+    frost_ui.find_element("custom_title")->inputfield_scale({ 1.25f, 1.25f });
 
     frost_ui.add_button("launch", "Launch game", { 10, 130 }, { 180, 20 }, [&]
         {
@@ -88,10 +90,11 @@ void GUI::create()
             std::ofstream file("settings.json");
 
             file << settings.dump(4);
-
+            
             run_return = false;
+            
         });
-    //frost_ui.find_element("launch")->add_texture(buttons.Decal(), texture_position, { 276, 34 });
+    frost_ui.find_element("launch")->add_texture(buttons.Decal(), texture_position, { 276, 34 });
 
     frost_ui.add_int_slider("slider", "Testing: ", { 80, 160 }, { 100, 10 }, { -5, 5 }, &slider_value_int);
 

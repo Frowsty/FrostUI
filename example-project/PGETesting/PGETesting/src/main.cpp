@@ -1,5 +1,4 @@
 #define OLC_PGE_APPLICATION
-
 #include "headers/olcPixelGameEngine.h"
 #include "headers/gui.h"
 
@@ -49,7 +48,7 @@ int main()
 {
     SettingsPrompt* settings_prompt = new SettingsPrompt;
 
-    if (settings_prompt->Construct(200, 250, 1, 1, false))
+    if (settings_prompt->Construct(1200, 750, 1, 1, false))
         settings_prompt->Start();
 
     delete settings_prompt;
