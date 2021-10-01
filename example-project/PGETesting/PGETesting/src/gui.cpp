@@ -14,8 +14,6 @@ void GUI::create()
     // command handler is mandatory to have for console window, if you don't want to execute any actions simply do '*return_msg = command'
     // for it to print out any text your type into the input field of the console
     frost_ui.find_element("console")->add_command_handler([](std::string& command, std::string* return_msg) { *return_msg = command; });
-
-    frost_ui.add_label("id2", "lbl1", "HELLO", { 10, 10 });
     
     frost_ui.add_groupbox("groupbox1", "", { 0, 0 }, { 200, 250 });
 
@@ -42,13 +40,14 @@ void GUI::create()
     frost_ui.find_element("quality")->set_animation_speed(1000);
     frost_ui.find_element("quality")->set_max_display_items(5);
 
-    frost_ui.add_checkbox("fullscreen", "Fullscreen: ", { 80, 70 }, { 20, 20 }, &fullscreen);
+    frost_ui.add_checkbox("fullscreen", "Fullscreen: ", { 80, 70 }, { 20, 20 });
 
     frost_ui.add_inputfield("custom_title", "Custom title: ", { 80, 100 }, { 100, 20 });
     frost_ui.find_element("custom_title")->inputfield_scale({ 1.25f, 1.25f });
 
     frost_ui.add_button("launch", "Launch game", { 10, 130 }, { 180, 20 }, [&]
         {
+            /*
             auto res = frost_ui.find_element("resolution")->get_selected_item();
             auto qual = frost_ui.find_element("quality")->get_selected_item();
             auto title = frost_ui.find_element("custom_title")->get_inputfield_value();
@@ -98,13 +97,24 @@ void GUI::create()
             file << settings.dump(4);
             
             run_return = false;
-            
+            */
+
+            auto x = frost_ui.find_element("slider")->get_slider_value<int>();
+            auto y = frost_ui.find_element("slider1")->get_slider_value<float>();
+            auto k = frost_ui.find_element("fullscreen")->get_checkbox_state();
+            auto j = frost_ui.find_element("test")->get_button_state();
+
+            std::cout << x << " - " << y << " - " << k << " - " << j << "\n";
         });
     frost_ui.find_element("launch")->add_texture(buttons.Decal(), texture_position, { 276, 34 });
 
-    frost_ui.add_int_slider("slider", "Testing: ", { 80, 160 }, { 100, 10 }, { -5, 5 }, &slider_value_int);
+    frost_ui.add_button("window", "test", "Testing", { 5, 5 }, { 100, 20 }, []() {});
+    frost_ui.find_element("test")->make_toggleable(true);
 
-    frost_ui.add_float_slider("slider1", "Testing 2: ", { 80, 190 }, { 100, 10 }, { -155, 372 }, &slider_value_float);
+    frost_ui.add_int_slider("slider", "Testing: ", { 80, 160 }, { 100, 10 }, { -5, 5 });
+    frost_ui.find_element("slider")->set_slider_value(2000); // the set_slider_value function will clamp this value automatically
+    frost_ui.add_float_slider("slider1", "Testing 2: ", { 80, 190 }, { 100, 10 }, { -155, 372 });
+    frost_ui.find_element("slider1")->set_slider_value(100000.f); // .f will indicate that this is a float value (this function is templated to avoid implicit casting)
 }
 
 bool GUI::run()

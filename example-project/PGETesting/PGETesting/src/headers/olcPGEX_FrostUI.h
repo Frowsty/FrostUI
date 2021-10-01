@@ -71,10 +71,12 @@ namespace olc
         // window colors
         olc::Pixel window_border_color = olc::GREY;
         olc::Pixel window_background_color = olc::WHITE;
+        olc::Pixel window_title_color = olc::BLACK;
         // window exit button colors
         olc::Pixel exit_button_normal = olc::GREY;
         olc::Pixel exit_button_hover = { 150, 150, 150 };
         olc::Pixel exit_button_click = { 100, 100, 100 };
+        olc::Pixel exit_button_text = olc::BLACK;
         // button colors
         olc::Pixel button_normal = olc::GREY;
         olc::Pixel button_hover = { 150, 150, 150 };
@@ -167,17 +169,17 @@ namespace olc
 
         void input(std::deque<FUI_Window*> windows);
 
-        olc::vf2d get_position() const;
+        const olc::vf2d get_position();
 
-        olc::vf2d get_size() const;
+        const olc::vf2d get_size();
 
-        olc::vf2d get_window_space() const;
+        const olc::vf2d get_window_space();
 
-        std::string get_id() const;
+        const std::string get_id();
 
-        float get_top_border_thickness() const;
+        const float get_top_border_thickness();
 
-        float get_border_thickness() const;
+        const float get_border_thickness();
 
         void set_top_border_thickness(float thickness);
 
@@ -185,7 +187,7 @@ namespace olc
 
         void close_window(bool close);
 
-        bool get_closed_state() const;
+        const bool get_closed_state();
 
         void change_position(olc::vi2d pos);
 
@@ -193,7 +195,7 @@ namespace olc
 
         void set_focused(bool state);
 
-        bool is_focused() const;
+        const bool is_focused();
 
         void disable_dragging(bool state);
     };
@@ -229,18 +231,19 @@ namespace olc
         olc::vi2d texture_size = { 0, 0 };
         olc::vf2d texture_scale = { 1.0f, 1.0f };
 
+        bool checkbox_state = false;
+
         FUI_Colors color_scheme;
 
         type slider_type;
         float slider_value_float = 0.f;
         int slider_value_int = 0;
-        float* slider_value_holder_float = nullptr;
-        int* slider_value_holder_int = nullptr;
-        olc::vf2d range;
-
+        vf2d range;
+        
         std::function<void()> input_enter_callback;
 
-        bool* toggle_button_state = nullptr;
+        bool toggleable = false;
+        bool button_state = false;
 
         bool clear_inputfield = false;
         std::string set_input_text = "";
@@ -277,7 +280,7 @@ namespace olc
 
         void set_focused_status(bool status);
 
-        const FUI_Window* get_parent();
+        FUI_Window* get_parent();
 
         const FUI_Type get_ui_type();
 
@@ -291,13 +294,15 @@ namespace olc
 
         void set_text_color(olc::Pixel color);
 
-        std::string get_group() const;
+        const std::string get_group();
 
         void scale_text(olc::vf2d scale);
 
         void inputfield_scale(olc::vf2d scale);
 
-        void make_toggleable(bool* state);
+        const bool get_button_state();
+
+        void make_toggleable(bool default_state);
 
         void add_item(const std::string& item, olc::vf2d scale);
 
@@ -305,9 +310,9 @@ namespace olc
 
         const int get_selected_item();
 
-        std::vector<int> get_selected_items();
+        const std::vector<int> get_selected_items();
 
-        const olc::vf2d get_position() const;
+        const olc::vf2d get_position();
 
         const olc::vf2d get_absolute_position();
 
@@ -317,14 +322,13 @@ namespace olc
 
         void set_max_display_items(const int amount);
 
-        void set_slider_value(float value);
-
-        void set_slider_value(int value);
+        template<typename T>
+        void set_slider_value(T value);
 
         template<typename T>
-        const T get_slider_value() const;
+        const T get_slider_value();
 
-        const std::string get_inputfield_value() const;
+        const std::string get_inputfield_value();
 
         void clear_inputfield_value();
 
@@ -343,6 +347,10 @@ namespace olc
         void add_command_entry(std::string& entry);
 
         void clear_console();
+
+        void set_checkbox_state(bool state);
+
+        const bool get_checkbox_state();
     };
 
     class FUI_Label : public FUI_Element
@@ -391,15 +399,13 @@ namespace olc
             CLICK,
             ACTIVE
         };
-
-        bool* checkbox_state;
         State state = State::NONE;
         bool was_active = false;
     public:
-        FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
-        FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
-        FUI_Checkbox(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
-        FUI_Checkbox(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, bool* state);
+        FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size);
+        FUI_Checkbox(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+        FUI_Checkbox(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size);
+        FUI_Checkbox(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size);
 
         void draw(olc::PixelGameEngine* pge) override;
 
@@ -475,16 +481,16 @@ namespace olc
 
     public:
         // float sliders
-        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
-        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
-        FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
-        FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, type slider_type);
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, type slider_type);
 
         // int sliders
-        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
-        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
-        FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
-        FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder, type slider_type);
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, type slider_type);
+        FUI_Slider(const std::string& id, FUI_Window* parent, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& group, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, type slider_type);
+        FUI_Slider(const std::string& id, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, type slider_type);
 
         void draw(olc::PixelGameEngine* pge) override;
 
@@ -636,9 +642,9 @@ namespace olc
 
         void add_button(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, std::function<void()> callback);
 
-        void add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state);
+        void add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
-        void add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state);
+        void add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
         void add_dropdown(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
@@ -652,13 +658,13 @@ namespace olc
 
         void add_groupbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size);
 
-        void add_float_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+        void add_float_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range);
 
-        void add_float_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder);
+        void add_float_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range);
 
-        void add_int_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder);
+        void add_int_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range);
 
-        void add_int_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder);
+        void add_int_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range);
 
         void add_label(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position);
 
@@ -705,17 +711,17 @@ namespace olc
         title = txt;
     }
 
-    olc::vf2d FUI_Window::get_position() const { return position; }
+    const olc::vf2d FUI_Window::get_position() { return position; }
 
-    olc::vf2d FUI_Window::get_size() const { return size; }
+    const olc::vf2d FUI_Window::get_size() { return size; }
 
-    olc::vf2d FUI_Window::get_window_space() const { return olc::vf2d{ size.x - border_thickness * 2, size.y - top_border_thickness }; }
+    const olc::vf2d FUI_Window::get_window_space() { return olc::vf2d{ size.x - border_thickness * 2, size.y - top_border_thickness }; }
 
-    std::string FUI_Window::get_id() const { return identifier; }
+    const std::string FUI_Window::get_id() { return identifier; }
 
-    float FUI_Window::get_top_border_thickness() const { return top_border_thickness; }
+    const float FUI_Window::get_top_border_thickness() { return top_border_thickness; }
 
-    float FUI_Window::get_border_thickness() const { return border_thickness; }
+    const float FUI_Window::get_border_thickness() { return border_thickness; }
 
     void FUI_Window::set_top_border_thickness(float thickness) { top_border_thickness = thickness; }
 
@@ -723,7 +729,7 @@ namespace olc
 
     void FUI_Window::close_window(bool close) { should_render = !close; }
 
-    bool FUI_Window::get_closed_state() const { return !should_render; }
+    const bool FUI_Window::get_closed_state() { return !should_render; }
 
     void FUI_Window::change_position(olc::vi2d pos) { position = pos; }
 
@@ -731,7 +737,7 @@ namespace olc
 
     void FUI_Window::set_focused(bool state) { focused = state; }
 
-    bool FUI_Window::is_focused() const { return focused; }
+    const bool FUI_Window::is_focused() { return focused; }
 
     void FUI_Window::disable_dragging(bool state) { disable_drag = state; }
 
@@ -748,7 +754,7 @@ namespace olc
 
         // Draw the window title
         olc::vf2d title_position = olc::vf2d{ position.x + (size.x / 2) - (pge->GetTextSizeProp(title).x / 2), position.y + (top_border_thickness / 2) - (pge->GetTextSizeProp(title).y / 2) };
-        pge->DrawStringPropDecal(title_position, title, olc::BLACK);
+        pge->DrawStringPropDecal(title_position, title, color_scheme.window_title_color);
 
         // Draw the default window close button
         olc::vf2d temp_pos = { position.x + size.x - (size.x / 10), position.y };
@@ -766,7 +772,7 @@ namespace olc
             break;
         }
         olc::vf2d close_position = olc::vf2d{ temp_pos.x + (temp_size.x / 2) - (pge->GetTextSizeProp("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSizeProp("X").y / 2) };
-        pge->DrawStringPropDecal(close_position, "X", olc::BLACK);
+        pge->DrawStringPropDecal(close_position, "X", color_scheme.exit_button_text);
 
         // Override top border with a darker color when window is inactive 
         if (!focused)
@@ -891,7 +897,7 @@ namespace olc
         is_focused = status;
     }
 
-    const FUI_Window* FUI_Element::get_parent()
+    FUI_Window* FUI_Element::get_parent()
     {
         return parent;
     }
@@ -926,7 +932,7 @@ namespace olc
         text_color = color;
     }
 
-    std::string FUI_Element::get_group() const
+    const std::string FUI_Element::get_group()
     {
         return group;
     }
@@ -944,10 +950,25 @@ namespace olc
             std::cout << "Trying to use inputfield_scale on incorrect UI_TYPE\n";
     }
 
-    void FUI_Element::make_toggleable(bool* state)
+    const bool FUI_Element::get_button_state()
+    {
+        if (ui_type == FUI_Type::BUTTON && toggleable)
+        {
+            return button_state;
+        }
+        else
+            std::cout << "Trying to get_button_state on incorrect UI_TYPE or button is not toggleable\n";
+
+        return false;
+    }
+
+    void FUI_Element::make_toggleable(bool default_state)
     {
         if (ui_type == FUI_Type::BUTTON)
-            toggle_button_state = state;
+        {
+            toggleable = true;
+            button_state = default_state;
+        }
         else
             std::cout << "Trying to make_toggleable on incorrect UI_TYPE\n";
     }
@@ -982,7 +1003,7 @@ namespace olc
         if (ui_type == FUI_Type::DROPDOWN)
         {
             if (item > elements.size() - 1)
-                std::cout << "Trying to set a invalid default item (" + std::to_string(item) + ")\n";
+                std::cout << "Trying to set a invalid default item (" << item << ")\n";
             else
             {
                 for (auto& element : elements)
@@ -1008,7 +1029,7 @@ namespace olc
                 for (auto& item : items)
                 {
                     if (item > elements.size() - 1)
-                        std::cout << "Trying to set a invalid default item (" + std::to_string(item) + ")\n";
+                        std::cout << "Trying to set a invalid default item (" << item << ")\n";
                     else
                     {
                         bool found = false;
@@ -1042,7 +1063,7 @@ namespace olc
             std::cout << "Trying to set_max_display_items on wrong UI_TYPE\n";
     }
 
-    std::vector<int> FUI_Element::get_selected_items()
+    const std::vector<int> FUI_Element::get_selected_items()
     {
         if (ui_type == FUI_Type::COMBOLIST)
         {
@@ -1058,7 +1079,7 @@ namespace olc
         return return_selected_items;
     }
 
-    const olc::vf2d FUI_Element::get_position() const
+    const olc::vf2d FUI_Element::get_position()
     {
         return position;
     }
@@ -1072,30 +1093,35 @@ namespace olc
         return absolute_position + position;
     }
 
-    void FUI_Element::set_slider_value(float value)
+    template <typename T>
+    void FUI_Element::set_slider_value(T value)
     {
         if (ui_type == FUI_Type::SLIDER)
         {
-            slider_value_float = value;
-            *slider_value_holder_float = value;
-        }
-        else
-            std::cout << "Trying to set_slider_value on wrong UI_TYPE\n";
-    }
-
-    void FUI_Element::set_slider_value(int value)
-    {
-        if (ui_type == FUI_Type::SLIDER)
-        {
-            slider_value_int = value;
-            *slider_value_holder_int = value;
+            switch (slider_type)
+            {
+            case type::FLOAT:
+                if (value > range.y)
+                    slider_value_float = range.y;
+                else if (value < range.x)
+                    slider_value_float = range.x;
+                else
+                    slider_value_float = value;
+            case type::INT:
+                if (value > range.y)
+                    slider_value_int = range.y;
+                else if (value < range.x)
+                    slider_value_int = range.x;
+                else
+                    slider_value_int = value;
+            }
         }
         else
             std::cout << "Trying to set_slider_value on wrong UI_TYPE\n";
     }
 
     template <typename T>
-    const T FUI_Element::get_slider_value() const
+    const T FUI_Element::get_slider_value()
     {
         if (ui_type == FUI_Type::SLIDER)
         {
@@ -1110,10 +1136,10 @@ namespace olc
         else
             std::cout << "Trying to get_slider_value on wrong UI_TYPE\n";
 
-        return T(0);
+        return T(-1);
     }
 
-    const std::string FUI_Element::get_inputfield_value() const
+    const std::string FUI_Element::get_inputfield_value()
     {
         if (ui_type == FUI_Type::INPUTFIELD)
             return inputfield_text;
@@ -1163,7 +1189,7 @@ namespace olc
         switch (ui_type)
         {
         case FUI_Type::BUTTON:
-            if (toggle_button_state)
+            if (toggleable)
             {
                 if (texture_positions.size() < 4)
                     std::cout << "There's not enough sprites to cover all toggle button states\n";
@@ -1211,6 +1237,24 @@ namespace olc
             should_clear_console = true;
         else
             std::cout << "Trying to clear_console on wrong UI_TYPE\n";
+    }
+
+    void FUI_Element::set_checkbox_state(bool state)
+    {
+        if (ui_type == FUI_Type::CHECKBOX)
+            checkbox_state = state;
+        else
+            std::cout << "Trying to set_checkbox_state on wrong UI_TYPE\n";
+    }
+
+    const bool FUI_Element::get_checkbox_state()
+    {
+        if (ui_type == FUI_Type::CHECKBOX)
+            return checkbox_state;
+        else
+            std::cout << "Trying to get_checkbox_state on wrong UI_TYPE\n";
+
+        return false;
     }
 
     /*
@@ -1372,7 +1416,7 @@ namespace olc
 
     void FUI_Button::input(olc::PixelGameEngine* pge)
     {
-        if (!toggle_button_state)
+        if (!toggleable)
         {
             if (pge->GetMousePos().x >= absolute_position.x &&
                 pge->GetMousePos().x <= absolute_position.x + size.x &&
@@ -1427,9 +1471,9 @@ namespace olc
                 state = State::NONE;
 
             if (state == State::ACTIVE)
-                *toggle_button_state = true;
+                button_state = true;
             else
-                *toggle_button_state = false;
+                button_state = false;
         }
     }
 
@@ -1438,7 +1482,7 @@ namespace olc
     #               FUI_CHECKBOX START                 #
     ####################################################
     */
-    FUI_Checkbox::FUI_Checkbox(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+    FUI_Checkbox::FUI_Checkbox(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s)
     {
         identifier = id;
         text = t;
@@ -1446,20 +1490,18 @@ namespace olc
         parent = pt;
         position = p;
         ui_type = FUI_Type::CHECKBOX;
-        checkbox_state = cb_state;
     }
 
-    FUI_Checkbox::FUI_Checkbox(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+    FUI_Checkbox::FUI_Checkbox(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s)
     {
         identifier = id;
         text = t;
         size = s;
         position = p;
         ui_type = FUI_Type::CHECKBOX;
-        checkbox_state = cb_state;
     }
 
-    FUI_Checkbox::FUI_Checkbox(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+    FUI_Checkbox::FUI_Checkbox(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
     {
         identifier = id;
         text = t;
@@ -1468,10 +1510,9 @@ namespace olc
         position = p;
         group = g;
         ui_type = FUI_Type::CHECKBOX;
-        checkbox_state = cb_state;
     }
 
-    FUI_Checkbox::FUI_Checkbox(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, bool* cb_state)
+    FUI_Checkbox::FUI_Checkbox(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s)
     {
         identifier = id;
         text = t;
@@ -1479,7 +1520,6 @@ namespace olc
         position = p;
         group = g;
         ui_type = FUI_Type::CHECKBOX;
-        checkbox_state = cb_state;
     }
 
     void FUI_Checkbox::draw(olc::PixelGameEngine* pge)
@@ -1580,9 +1620,9 @@ namespace olc
             state = State::NONE;
 
         if (state == State::ACTIVE)
-            *checkbox_state = true;
+            checkbox_state = true;
         else
-            *checkbox_state = false;
+            checkbox_state = false;
     }
 
     /*
@@ -2280,7 +2320,7 @@ namespace olc
     #               FUI_SLIDER START                   #
     ####################################################
     */
-    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -2288,24 +2328,22 @@ namespace olc
         parent = pt;
         position = p;
         range = r;
-        slider_value_holder_float = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
         size = s;
         position = p;
         range = r;
-        slider_value_holder_float = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -2314,12 +2352,11 @@ namespace olc
         position = p;
         group = g;
         range = r;
-        slider_value_holder_float = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, float* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vf2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -2327,14 +2364,13 @@ namespace olc
         position = p;
         group = g;
         range = r;
-        slider_value_holder_float = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
     //////
 
-    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -2342,24 +2378,22 @@ namespace olc
         parent = pt;
         position = p;
         range = r;
-        slider_value_holder_int = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
         size = s;
         position = p;
         range = r;
-        slider_value_holder_int = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, FUI_Window* pt, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -2368,12 +2402,11 @@ namespace olc
         position = p;
         group = g;
         range = r;
-        slider_value_holder_int = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
 
-    FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, int* vh, FUI_Slider::type s_type)
+    FUI_Slider::FUI_Slider(const std::string& id, const std::string& g, const std::string& t, olc::vi2d p, olc::vi2d s, olc::vi2d r, FUI_Slider::type s_type)
     {
         identifier = id;
         text = t;
@@ -2381,7 +2414,6 @@ namespace olc
         position = p;
         group = g;
         range = r;
-        slider_value_holder_int = vh;
         slider_type = s_type;
         ui_type = FUI_Type::SLIDER;
     }
@@ -2407,13 +2439,9 @@ namespace olc
             switch (slider_type)
             {
             case type::FLOAT:
-                if (*slider_value_holder_float < range.x)
-                {
+                if (slider_value_float < range.x)
                     slider_value_float = range.x;
-                    *slider_value_holder_float = range.x;
-                }
                 else
-                    slider_value_float = *slider_value_holder_float;
 
                 if (has_negative)
                 {
@@ -2428,13 +2456,8 @@ namespace olc
                     slider_ratio = slider_value_float / range.y;
                 break;
             case type::INT:
-                if (*slider_value_holder_int < range.x)
-                {
+                if (slider_value_int < range.x)
                     slider_value_int = range.x;
-                    *slider_value_holder_int = range.x;
-                }
-                else
-                    slider_value_int = *slider_value_holder_int;
 
                 if (has_negative)
                 {
@@ -2555,8 +2578,6 @@ namespace olc
                     slider_value_float = range.x;
                 else if (slider_value_float > range.y)
                     slider_value_float = range.y;
-
-                *slider_value_holder_float = slider_value_float;
                 break;
             case type::INT:
                 if (has_negative)
@@ -2573,8 +2594,6 @@ namespace olc
                     slider_value_int = range.x;
                 else if (slider_value_int > range.y)
                     slider_value_int = range.y;
-
-                *slider_value_holder_int = slider_value_int;
                 break;
             }
         }
@@ -3515,7 +3534,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_label, label_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+    void FrostUI::add_checkbox(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -3528,9 +3547,9 @@ namespace olc
                     {
                         did_add = true;
                         if (!active_group.second.empty())
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size));
                         else
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size));
 
                         break;
                     }
@@ -3545,7 +3564,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, bool* cb_state)
+    void FrostUI::add_checkbox(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size)
     {
         if (!find_element(identifier))
         {
@@ -3555,16 +3574,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size));
                         else
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size, cb_state));
+                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, active_group.second, text, position, size, cb_state));
+                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, active_group.second, text, position, size));
                 else
-                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, text, position, size, cb_state));
+                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, text, position, size));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
@@ -3735,7 +3754,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_groupbox, groupbox_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_float_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+    void FrostUI::add_float_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range)
     {
         if (!find_element(identifier))
         {
@@ -3748,9 +3767,9 @@ namespace olc
                     {
                         did_add = true;
                         if (!active_group.second.empty())
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, FUI_Slider::type::FLOAT));
                         else
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, FUI_Slider::type::FLOAT));
                     
                         break;
                     }
@@ -3765,7 +3784,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_float_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range, float* value_holder)
+    void FrostUI::add_float_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vf2d range)
     {
         if (!find_element(identifier))
         {
@@ -3775,22 +3794,22 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, FUI_Slider::type::FLOAT));
                         else
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, FUI_Slider::type::FLOAT));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, FUI_Slider::type::FLOAT));
                 else
-                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::FLOAT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, FUI_Slider::type::FLOAT));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_int_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
+    void FrostUI::add_int_slider(const std::string& parent_id, const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range)
     {
         if (!find_element(identifier))
         {
@@ -3803,9 +3822,9 @@ namespace olc
                     {
                         did_add = true;
                         if (!active_group.second.empty())
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, FUI_Slider::type::INT));
                         else
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, FUI_Slider::type::INT));
                     
                         break;
                     }
@@ -3820,7 +3839,7 @@ namespace olc
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";
     }
 
-    void FrostUI::add_int_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range, int* value_holder)
+    void FrostUI::add_int_slider(const std::string& identifier, const std::string& text, olc::vi2d position, olc::vi2d size, olc::vi2d range)
     {
         if (!find_element(identifier))
         {
@@ -3830,16 +3849,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, active_group.second, text, position, size, range, FUI_Slider::type::INT));
                         else
-                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                            elements.emplace_back(std::make_shared<FUI_Slider>(identifier, window, text, position, size, range, FUI_Slider::type::INT));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, active_group.second, text, position, size, range, FUI_Slider::type::INT));
                 else
-                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, value_holder, FUI_Slider::type::INT));
+                    elements.emplace_back(std::make_shared<FUI_Slider>(identifier, text, position, size, range, FUI_Slider::type::INT));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_slider, slider_id affected: " + identifier + ")\n";

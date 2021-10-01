@@ -15,10 +15,6 @@ private:
     int screen_width = 200;
     int screen_height = 250;
     int quality = 0;
-    bool fullscreen = false;
-
-    int slider_value_int = -5;
-    float slider_value_float = -132.0f;
 
     olc::Renderable buttons;
     std::vector<olc::vi2d> texture_position;
