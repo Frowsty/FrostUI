@@ -561,7 +561,8 @@ namespace olc
         int input_thickness = 10;
         std::string command;
         std::string executed_command;
-        std::string last_executed_command;
+        int command_index = 0;
+        std::vector<std::string> last_executed_commands;
         std::vector<std::string> executed_commands;
 
         bool run_once = true;
@@ -3169,12 +3170,32 @@ namespace olc
                     if (!command_entry.empty())
                         command_entry.clear();
                     else
-                        last_executed_command = command;
+                    {
+                        if (last_executed_commands.size() < 1)
+                            last_executed_commands.push_back(command);
+                        else if (command != last_executed_commands.back())
+                            last_executed_commands.push_back(command);
+                    }
+
+                    command_index = 0;
                 }
             }
 
-            if (executed_commands.size() > 0 && pge->GetKey(olc::UP).bPressed && !(pge->GetKey(olc::CTRL).bHeld || pge->GetKey(olc::SHIFT).bHeld))
-                inputfield.set_inputfield_value(last_executed_command);
+            if (last_executed_commands.size() > 0 && pge->GetKey(olc::UP).bPressed && !(pge->GetKey(olc::CTRL).bHeld || pge->GetKey(olc::SHIFT).bHeld)
+                && command_index <= last_executed_commands.size() - 1)
+            {
+                command_index++;
+                inputfield.set_inputfield_value(last_executed_commands[last_executed_commands.size() - command_index]);
+            }
+            if (last_executed_commands.size() > 0 && pge->GetKey(olc::DOWN).bPressed && !(pge->GetKey(olc::CTRL).bHeld || pge->GetKey(olc::SHIFT).bHeld)
+                && command_index >= 1)
+            {
+                command_index--;
+                if (command_index == 0)
+                    inputfield.clear_inputfield_value();
+                else
+                    inputfield.set_inputfield_value(last_executed_commands[last_executed_commands.size() - command_index]);
+            }
         }
 
         if (pge->GetMousePos().x >= absolute_position.x &&
