@@ -240,7 +240,12 @@ namespace olc
         int slider_value_int = 0;
         vf2d range;
         
+
+        // inputfield on enter callback
         std::function<void()> input_enter_callback;
+
+        // button callback
+        std::function<void()> callback;
 
         bool toggleable = false;
         bool button_state = false;
@@ -342,6 +347,8 @@ namespace olc
 
         void set_on_enter_callback(std::function<void()> cb);
 
+        void run_callback();
+
         void add_command_handler(std::function<void(std::string&, std::string*)> handler);
 
         void add_command_entry(std::string& entry);
@@ -375,7 +382,6 @@ namespace olc
             ACTIVE
         };
 
-        std::function<void()> callback;
         State state = State::NONE;
         bool was_active = false;
     public:
@@ -570,6 +576,7 @@ namespace olc
         bool can_scroll = false;
         int scroll_index = 0;
         int commands_shown = 1;
+        float last_pos = 0.f;
 
         std::string get_time()
         {
@@ -1214,6 +1221,16 @@ namespace olc
         }
         else
             std::cout << "Trying to set_on_enter_action on wrong UI_TYPE\n";
+    }
+
+    void FUI_Element::run_callback()
+    {
+        if (ui_type == FUI_Type::BUTTON)
+        {
+            callback();
+        }
+        else
+            std::cout << "Trying to run_callback on wrong UI_TYPE\n";
     }
 
     void FUI_Element::add_command_handler(std::function<void(std::string&, std::string*)> handler)
@@ -3095,14 +3112,25 @@ namespace olc
         // console text
         int j = 0;
         commands_shown = 1;
+        last_pos = 0.f;
         for (int i = scroll_index; i < executed_commands.size(); i++)
         {
-            auto text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(executed_commands[i]))* text_scale;
-            if (title_size.y + (text_size.y * j) <= scroll_threshold)
+            auto text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(executed_commands[i])) * text_scale;
+            float pos = 0.f;
+            if (j < 1)
+                pos = absolute_position.y + title_size.y + 2 + (text_size.y * j);
+            if (title_size.y + last_pos <= scroll_threshold)
             {
-                pge->DrawStringPropDecal({ absolute_position.x, absolute_position.y + title_size.y + 2 + (text_size.y * j) }, executed_commands[i], text_color, text_scale);
+                if (j >= 1)
+                    pge->DrawStringPropDecal({ absolute_position.x, last_pos }, executed_commands[i], text_color, text_scale);
+                else
+                    pge->DrawStringPropDecal({ absolute_position.x, pos }, executed_commands[i], text_color, text_scale);
                 commands_shown++;
             }
+            if (j < 1)
+                last_pos = pos + text_size.y;
+            else
+                last_pos += text_size.y;
             j++;
         }
 
@@ -3126,41 +3154,54 @@ namespace olc
                     command = command_entry;
                 if (!command.empty())
                 {
-                    std::string temp1;
+                    std::string display_text;
                     if (command_entry.empty())
                     {
                         command_handler(command, &executed_command);
-                        temp1 = get_time() + " - " + executed_command;
+                        display_text = get_time() + " - " + executed_command;
                     }
                     else
-                        temp1 = get_time() + " - " + command;
-                    auto text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(temp1))* text_scale;
+                        display_text = get_time() + " - " + command;
+                    auto text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(display_text)) * text_scale;
                     auto size_to_remove = 0.f;
+                    std::string holder = display_text;
+                    std::vector<std::string> text_parts;
                     while (text_size.x > size.x)
                     {
-                        text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(temp1))* text_scale;
                         size_to_remove = text_size.x - size.x;
                         size_to_remove = size_to_remove / text_size.x;
-                        size_to_remove = size_to_remove * temp1.size();
+                        int mod_size = std::ceil(size_to_remove * holder.size());
 
-                        size_to_remove = temp1.size() - std::ceil(size_to_remove);
-                        if (size_to_remove < temp1.size())
-                            temp1.erase(size_to_remove, temp1.size());
-                        else
-                            break;
+                        text_parts.push_back(std::string(holder.begin(), holder.end() - mod_size));
+                        holder.erase(holder.begin(), holder.end() - mod_size);
+                        text_size = static_cast<olc::vf2d>(pge->GetTextSizeProp(holder)) * text_scale;
                     }
-                    executed_commands.push_back(temp1);
-                    inputfield.clear_inputfield_value();
+                    if (text_parts.size() > 0)
+                    {
+                        if (holder != display_text)
+                            text_parts.push_back(holder);
+                        display_text.clear();
+                        for (int i = 0; i < text_parts.size(); i++)
+                        {
+                            if (i == 0)
+                                display_text = text_parts[i] + "\n ";
+                            else if (i == text_parts.size() - 1)
+                                display_text += text_parts[i];
+                            else
+                                display_text += text_parts[i] + "\n ";
+                        }
+                    }
+                    executed_commands.push_back(display_text);
 
                     auto title_size = pge->GetTextSizeProp(text) * text_scale;
 
-                    if (scroll_threshold > 0 && text_size.y * commands_shown >= scroll_threshold)
+                    if (scroll_threshold > 0 && last_pos + text_size.y >= scroll_threshold)
                         scroll_index++;
 
                     //std::cout << "index: " << scroll_index << std::endl;
 
 
-                    if (scroll_index > 0 && scroll_index < (executed_commands.size() - commands_shown) + 1 && text_size.y * commands_shown >= scroll_threshold)
+                    if (scroll_index > 0 && scroll_index < (executed_commands.size() - commands_shown) + 1 && last_pos + text_size.y >= scroll_threshold)
                         scroll_index = (executed_commands.size() - commands_shown) + 1;
 
                     //unsure why I added this line here, if I figure it out back in it goes :)
@@ -3171,6 +3212,7 @@ namespace olc
                         command_entry.clear();
                     else
                     {
+                        inputfield.clear_inputfield_value();
                         if (last_executed_commands.size() < 1)
                             last_executed_commands.push_back(command);
                         else if (command != last_executed_commands.back())
@@ -3568,9 +3610,9 @@ namespace olc
                     {
                         did_add = true;
                         if (!active_group.second.empty())
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size));
                         else
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size));
 
                         break;
                     }
@@ -3595,16 +3637,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Checkbox>(identifier, window, active_group.second, text, position, size));
                         else
-                            elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size));
+                            elements.emplace_back(std::make_shared<FUI_Checkbox>(identifier, window, text, position, size));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, active_group.second, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Checkbox>(identifier, active_group.second, text, position, size));
                 else
-                    elements.emplace_front(std::make_shared<FUI_Checkbox>(identifier, text, position, size));
+                    elements.emplace_back(std::make_shared<FUI_Checkbox>(identifier, text, position, size));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_checkbox, checkbox_id affected: " + identifier + ")\n";
@@ -3898,9 +3940,9 @@ namespace olc
                     {
                         did_add = true;
                         if (!active_group.second.empty())
-                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
+                            elements.emplace_back(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                         else
-                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
+                            elements.emplace_back(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
                     
                         break;
                     }
@@ -3925,16 +3967,16 @@ namespace olc
                 {
                     if (window->get_id() == active_window_id)
                         if (!active_group.second.empty())
-                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
+                            elements.emplace_back(std::make_shared<FUI_Button>(identifier, window, active_group.second, text, position, size, callback));
                         else
-                            elements.emplace_front(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
+                            elements.emplace_back(std::make_shared<FUI_Button>(identifier, window, text, position, size, callback));
                 }
             }
             else
                 if (!active_group.second.empty())
-                    elements.emplace_front(std::make_shared<FUI_Button>(identifier, active_group.second, text, position, size, callback));
+                    elements.emplace_back(std::make_shared<FUI_Button>(identifier, active_group.second, text, position, size, callback));
                 else
-                    elements.emplace_front(std::make_shared<FUI_Button>(identifier, text, position, size, callback));
+                    elements.emplace_back(std::make_shared<FUI_Button>(identifier, text, position, size, callback));
         }
         else
             std::cout << "Duplicate IDs found (function affected: add_button, button_id affected: " + identifier + ")\n";
