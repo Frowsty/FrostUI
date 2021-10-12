@@ -543,6 +543,8 @@ namespace olc
         std::string text_out_of_view;
         std::string displayed_text;
 
+        bool did_paste = false;
+
         uint64_t last_cursor_tick = 0;
         uint64_t hold_backspace_tick = 0;
         uint64_t last_backspace_tick = 0;
@@ -2821,7 +2823,12 @@ namespace olc
             if (mask_inputfield)
                 displayed_text += "*";
             else if (displayed_text != inputfield_text)
-                displayed_text += inputfield_text.back();
+            {
+                if (!did_paste)
+                    displayed_text += inputfield_text.back();
+                else
+                    did_paste = false;
+            }
             old_inputfield_text = inputfield_text;
         }
         else if (display_text_size.x >= size.x - 1)
@@ -2848,9 +2855,12 @@ namespace olc
         }
 
         pge->DrawStringPropDecal(text_position, displayed_text, text_color, input_scale);
+        //std::cout << inputfield_text << "\n";
 
-        if (select_all)
+        if (select_all && displayed_text.size() > 0)
             pge->FillRectDecal(text_position, olc::vf2d(display_text_size.x, display_text_size.y), color_scheme.inputfield_select_all_background);
+        else
+            select_all = false;
 
         if (selected_chars > 0 && !select_all)
         {
@@ -2909,6 +2919,8 @@ namespace olc
 
             if (pge->GetKey(olc::ENTER).bPressed)
             {
+                selected_chars = 0;
+                select_all = false;
                 if (input_enter_callback)
                     input_enter_callback();
             }
@@ -2950,6 +2962,7 @@ namespace olc
                 {
                     inputfield_text.append(data);
                     displayed_text.append(data);
+                    did_paste = true;
                 }
 
                 if (select_all)
