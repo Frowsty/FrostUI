@@ -81,7 +81,7 @@ namespace olc
         olc::Pixel button_normal = olc::GREY;
         olc::Pixel button_hover = { 150, 150, 150 };
         olc::Pixel button_click = { 120, 120, 120 };
-        olc::Pixel button_active = { 100, 100, 100 };
+        olc::Pixel button_active = { 100, 100, 100 }; // toggle state when a button is toggleable
         // checkbox colors
         olc::Pixel checkbox_normal = olc::GREY;
         olc::Pixel checkbox_hover = { 150, 150, 150 };
@@ -152,6 +152,7 @@ namespace olc
 
         bool is_dragging = false;
         bool disable_drag = false;
+        bool disable_exit = false;
 
         bool focused = false;
 
@@ -198,6 +199,8 @@ namespace olc
         const bool is_focused();
 
         void disable_dragging(bool state);
+
+        void disable_close(bool state);
     };
 
     class FUI_Element
@@ -751,6 +754,8 @@ namespace olc
 
     void FUI_Window::disable_dragging(bool state) { disable_drag = state; }
 
+    void FUI_Window::disable_close(bool state) { disable_exit = state; }
+
     void FUI_Window::draw()
     {
         // Draw the main window area
@@ -767,22 +772,26 @@ namespace olc
         pge->DrawStringPropDecal(title_position, title, color_scheme.window_title_color);
 
         // Draw the default window close button
-        olc::vf2d temp_pos = { position.x + size.x - (size.x / 10), position.y };
-        olc::vf2d temp_size = { size.x / 10, top_border_thickness };
-        switch (state)
+        if (!disable_exit)
         {
-        case button_state::NORMAL:
-            pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_normal);
-            break;
-        case button_state::HOVER:
-            pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_hover);
-            break;
-        case button_state::CLICK:
-            pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_click);
-            break;
+            olc::vf2d temp_pos = { position.x + size.x - (size.x / 10), position.y };
+            olc::vf2d temp_size = { size.x / 10, top_border_thickness };
+            switch (state)
+            {
+            case button_state::NORMAL:
+                pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_normal);
+                break;
+            case button_state::HOVER:
+                pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_hover);
+                break;
+            case button_state::CLICK:
+                pge->FillRectDecal(temp_pos, temp_size, color_scheme.exit_button_click);
+                break;
+            }
+            olc::vf2d close_position = olc::vf2d{ temp_pos.x + (temp_size.x / 2) - (pge->GetTextSizeProp("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSizeProp("X").y / 2) };
+            pge->DrawStringPropDecal(close_position, "X", color_scheme.exit_button_text);
         }
-        olc::vf2d close_position = olc::vf2d{ temp_pos.x + (temp_size.x / 2) - (pge->GetTextSizeProp("X").x / 2), temp_pos.y + (top_border_thickness / 2) - (pge->GetTextSizeProp("X").y / 2) };
-        pge->DrawStringPropDecal(close_position, "X", color_scheme.exit_button_text);
+
 
         // Override top border with a darker color when window is inactive 
         if (!focused)
@@ -811,21 +820,25 @@ namespace olc
         }
 
         olc::vi2d new_window_position = position;
+
         // input on default close button
-        if ((pge->GetMousePos().x >= position.x + size.x - (size.x / 10) && pge->GetMousePos().x <= position.x + size.x &&
-            pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + top_border_thickness))
+        if (!disable_exit)
         {
-            if (pge->GetMouse(0).bHeld || pge->GetMouse(0).bPressed || pge->GetMouse(0).bReleased)
+            if ((pge->GetMousePos().x >= position.x + size.x - (size.x / 10) && pge->GetMousePos().x <= position.x + size.x &&
+                pge->GetMousePos().y >= position.y && pge->GetMousePos().y <= position.y + top_border_thickness))
             {
-                if (pge->GetMouse(0).bReleased && focused)
-                    close_window(true);
-                state = button_state::CLICK;
+                if (pge->GetMouse(0).bHeld || pge->GetMouse(0).bPressed || pge->GetMouse(0).bReleased)
+                {
+                    if (pge->GetMouse(0).bReleased && focused)
+                        close_window(true);
+                    state = button_state::CLICK;
+                }
+                else
+                    state = button_state::HOVER;
             }
             else
-                state = button_state::HOVER;
+                state = button_state::NORMAL;
         }
-        else
-            state = button_state::NORMAL;
 
         // dragging related
         if (!disable_drag)
