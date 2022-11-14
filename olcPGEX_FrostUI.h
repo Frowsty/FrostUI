@@ -302,6 +302,8 @@ namespace olc
 
         void set_text_color(olc::Pixel color);
 
+        void set_colors(std::vector<olc::Pixel> colors);
+
         const std::string get_group();
 
         void scale_text(olc::vf2d scale);
@@ -953,6 +955,79 @@ namespace olc
     void FUI_Element::set_text_color(olc::Pixel color)
     {
         text_color = color;
+    }
+
+    void FUI_Element::set_colors(std::vector<olc::Pixel> colors)
+    {
+        switch (ui_type)
+        {
+            case FUI_Type::BUTTON:
+                if (colors.size() == 4)
+                {
+                    color_scheme.button_normal = colors[0];
+                    color_scheme.button_hover = colors[1];
+                    color_scheme.button_click = colors[2];
+                    color_scheme.button_active = colors[3];
+                }
+                break;
+            case FUI_Type::CHECKBOX:
+                if (colors.size() == 4)
+                {
+                    color_scheme.checkbox_normal = colors[0];
+                    color_scheme.checkbox_hover = colors[1];
+                    color_scheme.checkbox_click = colors[2];
+                    color_scheme.checkbox_active = colors[3];
+                }
+                break;
+            case FUI_Type::DROPDOWN:
+                if (colors.size() == 3)
+                {
+                    color_scheme.dropdown_normal = colors[0];
+                    color_scheme.dropdown_hover = colors[1];
+                    color_scheme.dropdown_active = colors[2];
+                }
+                break;
+            case FUI_Type::COMBOLIST:
+                if (colors.size() == 3)
+                {
+                    color_scheme.combolist_normal = colors[0];
+                    color_scheme.combolist_hover = colors[1];
+                    color_scheme.combolist_active = colors[2];
+                }
+                break;
+            case FUI_Type::GROUPBOX:
+                if (colors.size() == 2)
+                {
+                    color_scheme.groupbox_outline = colors[0];
+                    color_scheme.groupbox_background = colors[1];
+                }
+                break;
+            case FUI_Type::SLIDER:
+                if (colors.size() == 3)
+                {
+                    color_scheme.slider_outline = colors[0];
+                    color_scheme.slider_normal = colors[1];
+                    color_scheme.slider_hover = colors[2];
+                }
+                break;
+            case FUI_Type::INPUTFIELD:
+                if (colors.size() == 5)
+                {
+                    color_scheme.inputfield_outline = colors[0];
+                    color_scheme.inputfield_background = colors[1];
+                    color_scheme.inputfield_select_all_background = colors[2];
+                    color_scheme.inputfield_cursor = colors[3];
+                    color_scheme.scroll_indicator = colors[4];
+                }
+                break;
+            case FUI_Type::CONSOLE:
+                if (colors.size() == 2)
+                {
+                    color_scheme.console_outline = colors[0];
+                    color_scheme.console_background = colors[1];
+                }
+                break;
+        }
     }
 
     const std::string FUI_Element::get_group()
