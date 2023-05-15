@@ -519,7 +519,7 @@ namespace olc
         };
 
         enum class TextKey {
-            None = -1,
+            NONE = -1,
             A = 0, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
             Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
             LBracket, RBracket, Semicolon, Comma, Period, Quote, ForwardSlash, BackwardSlash,
@@ -2822,13 +2822,13 @@ namespace olc
                 return i;
             }
         }
-        return static_cast<int>(TextKey::None);
+        return static_cast<int>(TextKey::NONE);
     }
 
     std::string FUI_Inputfield::get_char_from_id(olc::PixelGameEngine* pge)
     {
         int index = get_char_id(pge);
-        if (index == static_cast<int>(TextKey::None)) return "";
+        if (index == static_cast<int>(TextKey::NONE)) return "";
 
         if (pge->GetKey(olc::SHIFT).bHeld) {
             return std::string(1, text_shift[index]);
